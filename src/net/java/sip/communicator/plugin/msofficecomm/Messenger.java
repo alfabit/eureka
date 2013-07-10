@@ -156,7 +156,8 @@ public class Messenger
 
     static
     {
-        System.loadLibrary("jmsofficecomm");
+        System.out.println("Messenger");
+//        System.loadLibrary("jmsofficecomm");
     }
 
     private static synchronized void addSelf(

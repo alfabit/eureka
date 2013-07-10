@@ -615,7 +615,7 @@ public class InitialAccountRegistrationFrame
 
             InitialAccountRegistrationFrame initialAccountRegistrationFrame =
                 InitialAccountRegistrationFrame.this;
-            initialAccountRegistrationFrame.setVisible(false);
+                initialAccountRegistrationFrame.setVisible(false);
             initialAccountRegistrationFrame.dispose();
         }
     }

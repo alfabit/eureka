@@ -85,6 +85,8 @@ public class SIPCommTextField
         this.getDocument().addDocumentListener(this);
     }
 
+
+
     /**
      * Indicates that the mouse button was pressed on this component. Hides
      * the default text when user clicks on the text field.

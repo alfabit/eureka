@@ -9,10 +9,14 @@ package net.java.sip.communicator.launcher;
 import java.awt.*;
 import java.io.*;
 
+import net.java.sip.communicator.plugin.desktoputil.SIPCommFrame;
+import net.java.sip.communicator.plugin.exampleplugin.PluginDialog;
 import net.java.sip.communicator.util.*;
 import net.java.sip.communicator.util.launchutils.*;
 
 import org.apache.felix.main.*;
+
+import javax.swing.*;
 
 /**
  * Starts the SIP Communicator.
@@ -65,6 +69,7 @@ public class SIPCommunicator
     public static void main(String[] args)
         throws Exception
     {
+
         String version = System.getProperty("java.version");
         String vmVendor = System.getProperty("java.vendor");
         String osName = System.getProperty("os.name");

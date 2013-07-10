@@ -151,6 +151,13 @@ public class Container
     public static final Container CONTAINER_CHAT_STATUS_BAR
             = new Container("CONTAINER_CHAT_STATUS_BAR");
 
+
+    /**
+     * Eureka Frame.
+     */
+    public static final Container CONTAINER_EUREKA_FRAME
+            = new Container("CONTAINER_EUREKA_FRAME");
+
     /*
      * Constraints
      */
@@ -178,6 +185,7 @@ public class Container
      * Indicates the right edge of a container.
      */
     public static final String RIGHT = "Right";
+
 
     /**
      * The name of the container.

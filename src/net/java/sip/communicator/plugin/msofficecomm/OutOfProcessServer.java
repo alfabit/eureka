@@ -16,7 +16,8 @@ class OutOfProcessServer
 {
     static
     {
-        System.loadLibrary("jmsofficecomm");
+        System.out.println("OutOfProcessServer");
+//        System.loadLibrary("jmsofficecomm");
     }
 
     static native int start();

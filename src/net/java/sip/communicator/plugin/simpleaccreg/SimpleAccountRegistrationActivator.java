@@ -9,6 +9,7 @@ package net.java.sip.communicator.plugin.simpleaccreg;
 import java.awt.*;
 import java.util.*;
 
+import net.java.sip.communicator.plugin.eureka.EurekaFrame;
 import net.java.sip.communicator.service.contactlist.*;
 import net.java.sip.communicator.service.gui.*;
 import net.java.sip.communicator.service.protocol.*;
@@ -75,6 +76,7 @@ public class SimpleAccountRegistrationActivator
         }
 
         init();
+
     }
 
     /**
@@ -103,7 +105,10 @@ public class SimpleAccountRegistrationActivator
                 - accountRegFrame.getWidth() / 2, screenSize.height / 2
                 - accountRegFrame.getHeight() / 2);
 
-            accountRegFrame.setVisible(true);
+//            UNCOMMENT!!!!!!!!!!!!!!!
+//            accountRegFrame.setVisible(true);
+
+
         }
 
         if (logger.isInfoEnabled())

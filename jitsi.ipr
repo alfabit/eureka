@@ -39,6 +39,7 @@
   <component name="EntryPointsManager">
     <entry_points version="2.0" />
   </component>
+  <component name="IdProvider" IDEtalkID="79F36FEE4CDAA791EEE8988C81C705FD" />
   <component name="JavacSettings">
     <option name="MAXIMUM_HEAP_SIZE" value="512" />
   </component>
@@ -197,9 +198,10 @@
     <output url="file://$PROJECT_DIR$/classes" />
   </component>
   <component name="ProjectRunConfigurationManager">
-    <configuration default="false" name="run" type="Application" factoryName="Application">
+    <configuration default="false" name="run" type="Application" factoryName="Application" singleton="true">
+      <extension name="coverage" enabled="false" merge="false" sample_coverage="true" runner="idea" />
       <option name="MAIN_CLASS_NAME" value="net.java.sip.communicator.launcher.SIPCommunicator" />
-      <option name="VM_PARAMETERS" value="-Xdock:name=Jitsi -Xdock:icon=resources/images/logo/sc_logo_128x128.icns -client -Dfelix.config.properties=file:lib/felix.client.run.properties -Djava.util.logging.config.file=lib/logging.properties -Dnet.java.sip.communicator.SC_HOME_DIR_NAME=schome -Djava.library.path=${ld.library.path}:lib/native/mac:${system.DYLD_LIBRARY_PATH} -Djna.library.path=${ld.library.path}:lib/native/mac:${system.DYLD_LIBRARY_PATH} -Dapple.laf.useScreenMenuBar=true" />
+      <option name="VM_PARAMETERS" value="-client -Dfelix.config.properties=file:lib/felix.client.run.properties -Djava.util.logging.config.file=lib/logging.properties -Dnet.java.sip.communicator.SC_HOME_DIR_NAME=schome -Djava.library.path=lib/native/windows-64 -Djna.library.path=lib/native/windows-64 -Dapple.laf.useScreenMenuBar=true" />
       <option name="PROGRAM_PARAMETERS" value="" />
       <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$" />
       <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="false" />
@@ -208,8 +210,16 @@
       <option name="ENV_VARIABLES" />
       <option name="PASS_PARENT_ENVS" value="true" />
       <module name="jitsi" />
-      <envs />
+      <envs>
+        <env name="path" value="C:\JAVA\JRE\jre6\bin;.lib/native/windows-64" />
+      </envs>
+      <RunnerSettings RunnerId="Debug">
+        <option name="DEBUG_PORT" value="" />
+        <option name="TRANSPORT" value="0" />
+        <option name="LOCAL" value="true" />
+      </RunnerSettings>
       <RunnerSettings RunnerId="Run" />
+      <ConfigurationWrapper RunnerId="Debug" />
       <ConfigurationWrapper RunnerId="Run" />
       <method>
         <option name="Make" enabled="false" />
@@ -217,6 +227,7 @@
       </method>
     </configuration>
     <configuration default="false" name="run-v4" type="Application" factoryName="Application">
+      <extension name="coverage" enabled="false" merge="false" sample_coverage="true" runner="idea" />
       <option name="MAIN_CLASS_NAME" value="net.java.sip.communicator.launcher.SIPCommunicator" />
       <option name="VM_PARAMETERS" value="-Xdock:name=Jitsi -Xdock:icon=resources/images/logo/sc_logo_128x128.icns -client -Dfelix.config.properties=file:lib/felix.client.run.properties -Djava.util.logging.config.file=lib/logging.properties -Djava.net.preferIPv6Addresses=false -Dnet.java.sip.communicator.SC_HOME_DIR_NAME=schome -Djava.library.path=${ld.library.path}:lib/native/mac:${system.DYLD_LIBRARY_PATH} -Djna.library.path=${ld.library.path}:lib/native/mac:${system.DYLD_LIBRARY_PATH} -Dapple.laf.useScreenMenuBar=true" />
       <option name="PROGRAM_PARAMETERS" value="" />
