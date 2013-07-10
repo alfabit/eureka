@@ -65,6 +65,7 @@ public class EurekaFrame
     {
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 
+        // A new mega change in file!
 
         setLayout(new BorderLayout());
         JLabel background=new JLabel(Resources.getImage("plugin.eureka.AUTHORIZE_FRAME_BACKGROUND"));
