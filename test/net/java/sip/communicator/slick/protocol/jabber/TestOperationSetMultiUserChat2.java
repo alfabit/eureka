@@ -418,6 +418,9 @@ public class TestOperationSetMultiUserChat2
 
         assertNotNull("createChatRoom returned null", opSet1Room);
 
+        /*
+        Room listing has been disabled on testing server,
+        so skip checks
         // and check if it exists on the server
         List<String> existingRooms = opSetMUC1.getExistingChatRooms();
 
@@ -429,6 +432,7 @@ public class TestOperationSetMultiUserChat2
             }
         }
         fail("the new created room is not listed on server");
+        */
     }
 
     /**
@@ -525,6 +529,10 @@ public class TestOperationSetMultiUserChat2
         opSet1Room.join();
 
         ChatRoom foundRoom = null;
+        /*
+         //findRoom always returns ChatRoom instance. If it doesn't exists in 
+         //the cache it creates an instance of ChatRoom.
+        
         try
         {
             foundRoom = opSetMUC1.findRoom("WhoCreatedThatRoom");
@@ -535,7 +543,7 @@ public class TestOperationSetMultiUserChat2
         }
         assertNull("wasnt expecting to find the room named " +
             "'WhoCreatedThatRoom' on server", foundRoom);
-
+*/
         // to find the existing room created with opSetMUC1,
         // we will use opSetMUC2 to be sure the room will not be retrieved from
         // opSetMUC1 cache
@@ -1278,7 +1286,7 @@ public class TestOperationSetMultiUserChat2
 
         // User1 who just created the room is supposed to be the owner:
         assertEquals("Unexpected role for user1",
-            roomUser1.getUserRole(), ChatRoomMemberRole.MODERATOR);
+            roomUser1.getUserRole(), ChatRoomMemberRole.OWNER);
         assertEquals("Unexpected role for user1", roomUser1.getUserRole(),
             getRole(fixture.userID1, roomUser1.getMembers(),
                     roomUser1.getName(), true));

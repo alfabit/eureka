@@ -1458,6 +1458,11 @@ public class Messenger
                 self = false;
                 for (ProtocolProviderService pps : ppss.keySet())
                 {
+                    if(!pps.isRegistered())
+                    {
+                        continue;
+                    }
+
                     OperationSetServerStoredAccountInfo
                         serverStoredAccountInfoOpSet
                             = pps.getOperationSet(

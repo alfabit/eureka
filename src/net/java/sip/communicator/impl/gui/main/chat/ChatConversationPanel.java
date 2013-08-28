@@ -180,7 +180,16 @@ public class ChatConversationPanel
                 // something (changed the caret) or when a new tab has been
                 // added or the window has been resized.
                 verticalScrollBar.setValue(verticalScrollBar.getMaximum());
-                chatTextPane.setCaretPosition(document.getLength());
+                Document doc = chatTextPane.getDocument();
+                if(doc != null)
+                {
+                    int pos = document.getLength();
+                    if (pos >= 0 &&
+                        pos <= chatTextPane.getDocument().getLength())
+                    {
+                        chatTextPane.setCaretPosition(pos);
+                    }
+                }
             }
         }
     };
@@ -424,16 +433,7 @@ public class ChatConversationPanel
         String chatString = "";
         String endHeaderTag = "";
 
-        String startSystemDivTag
-            = "<DIV id=\"systemMessage\" style=\"color:#627EB7;\">";
-        String endDivTag = "</DIV>";
-
         lastMessageUID = chatMessage.getMessageUID();
-
-        String startPlainTextTag
-            = ChatHtmlUtils.createStartPlainTextTag(contentType);
-        String endPlainTextTag
-            = ChatHtmlUtils.createEndPlainTextTag(contentType);
 
         if (messageType.equals(Chat.INCOMING_MESSAGE))
         {
@@ -525,6 +525,14 @@ public class ChatConversationPanel
         }
         else if (messageType.equals(Chat.SYSTEM_MESSAGE))
         {
+            String startSystemDivTag
+                = "<DIV id=\"systemMessage\" style=\"color:#627EB7;\">";
+            String endDivTag = "</DIV>";
+            String startPlainTextTag
+                = ChatHtmlUtils.createStartPlainTextTag(contentType);
+            String endPlainTextTag
+                = ChatHtmlUtils.createEndPlainTextTag(contentType);
+
             chatString
                 += startSystemDivTag + startPlainTextTag
                     + formatMessage(message, contentType, keyword)
@@ -825,8 +833,9 @@ public class ChatConversationPanel
     * video/image sources with their previews or any other substitution. Spawns
     * a separate thread for replacement.
     *
-    * @param elem the element in the HTML Document.
+    * @param messageID the messageID element.
     * @param chatString the message.
+    * @param contentType
     */
     private void processReplacement(final String messageID,
                                     final String chatString,
@@ -1012,6 +1021,9 @@ public class ChatConversationPanel
                                     String contentType,
                                     String keyword)
     {
+        if(message == null)
+            return message;
+
         Matcher m
             = Pattern.compile(Pattern.quote(keyword), Pattern.CASE_INSENSITIVE)
                 .matcher(message);
@@ -1882,10 +1894,9 @@ public class ChatConversationPanel
     }
 
     /**
-     *
-     * @param attribute
-     * @param matchStrings
-     * @return
+     * Finds the first element with <tt>name</tt>.
+     * @param name the name to search for.
+     * @return the first element with <tt>name</tt>.
      */
     private Element findFirstElement(String name)
     {
@@ -1926,11 +1937,11 @@ public class ChatConversationPanel
     }
 
     /**
-     *
-     * @param element
-     * @param attrName
-     * @param matchStrings
-     * @return
+     * Finds the first element with <tt>name</tt> among the child elements of
+     * <tt>element</tt>.
+     * @param element the element to searh for.
+     * @param name the name to search for.
+     * @return the first element with <tt>name</tt>.
      */
     private Element findFirstElement(   Element element,
                                         String name)

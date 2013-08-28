@@ -8,6 +8,7 @@ package net.java.sip.communicator.impl.protocol.jabber.extensions.colibri;
 
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jingle.*;
 
+import org.jitsi.service.neomedia.*;
 import org.jivesoftware.smack.packet.*;
 import org.jivesoftware.smack.provider.*;
 import org.xmlpull.v1.*;
@@ -128,6 +129,15 @@ public class ColibriIQProvider
                         if ((rtcpPort != null) && (rtcpPort.length() != 0))
                             channel.setRTCPPort(Integer.parseInt(rtcpPort));
 
+                        String directionStr
+                            = parser.getAttributeValue(
+                                    "" ,
+                                    ColibriConferenceIQ.Channel
+                                            .DIRECTION_ATTR_NAME);
+                        if (directionStr != null)
+                            channel.setDirection(
+                                    MediaDirection.parseString(directionStr));
+
                         String expire
                             = parser.getAttributeValue(
                                     "",
@@ -188,7 +198,22 @@ public class ColibriIQProvider
                                         .parseExtension(parser);
 
                             if (payloadType != null)
+                            {
+                                if("opus".equals(payloadType.getName())
+                                        && payloadType.getChannels() != 2)
+                                {
+                                    /*
+                                     * We only have a Format for opus with 2
+                                     * channels, because it MUST be advertised
+                                     * with 2 channels.
+                                     * Fixing the number of channels here allows
+                                     * us to be compatible with agents who
+                                     * advertise it with 1 channel.
+                                     */
+                                    payloadType.setChannels(2);
+                                }
                                 channel.addPayloadType(payloadType);
+                            }
                         }
                     }
                     break;

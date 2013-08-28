@@ -11,6 +11,7 @@ import java.util.*;
 import net.java.sip.communicator.impl.gui.*;
 import net.java.sip.communicator.impl.gui.main.chat.conference.*;
 import net.java.sip.communicator.service.protocol.*;
+import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.util.*;
 
 import org.jitsi.service.configuration.*;
@@ -22,6 +23,7 @@ import org.osgi.framework.*;
  * @author Yana Stamcheva
  */
 public class ChatRoomList
+    implements RegistrationStateChangeListener
 {
     /**
      * The logger.
@@ -79,12 +81,13 @@ public class ChatRoomList
     }
 
     /**
-     * Adds a chat server and all its existing chat rooms.
+     * Adds a chat server which is registered and all its existing chat rooms.
      *
      * @param pps the <tt>ProtocolProviderService</tt> corresponding to the chat
      * server
      */
-    public void addChatProvider(ProtocolProviderService pps)
+    private ChatRoomProviderWrapper
+        addRegisteredChatProvider(ProtocolProviderService pps)
     {
         ChatRoomProviderWrapper chatRoomProvider
             = new ChatRoomProviderWrapper(pps);
@@ -129,6 +132,22 @@ public class ChatRoomList
         }
 
         fireProviderWrapperAdded(chatRoomProvider);
+
+        return chatRoomProvider;
+    }
+
+    /**
+     * Adds a listener to wait for provider to be registered or unregistered.
+     *
+     * @param pps the <tt>ProtocolProviderService</tt> corresponding to the chat
+     * server
+     */
+    public void addChatProvider(ProtocolProviderService pps)
+    {
+        if(pps.isRegistered())
+            addRegisteredChatProvider(pps);
+        else
+            pps.addRegistrationStateChangeListener(this);
     }
 
     /**
@@ -143,7 +162,7 @@ public class ChatRoomList
         ChatRoomProviderWrapper wrapper = findServerWrapperFromProvider(pps);
 
         if (wrapper != null)
-            removeChatProvider(wrapper);
+            removeChatProvider(wrapper, true);
     }
 
     /**
@@ -152,44 +171,60 @@ public class ChatRoomList
      *
      * @param chatRoomProvider the <tt>ChatRoomProviderWrapper</tt>
      *            corresponding to the server to remove
+     * @param permanently whether to remove any listener
+     *                    and stored configuration
      */
-    private void removeChatProvider(ChatRoomProviderWrapper chatRoomProvider)
+    private void removeChatProvider(ChatRoomProviderWrapper chatRoomProvider,
+                                    boolean permanently)
     {
         providersList.remove(chatRoomProvider);
 
-        ConfigurationService configService
-            = GuiActivator.getConfigurationService();
-        String prefix = "net.java.sip.communicator.impl.gui.accounts";
-        AccountID accountID =
-                chatRoomProvider.getProtocolProvider().getAccountID();
+        ConferenceChatManager conferenceChatManager =
+            GuiActivator.getUIService().getConferenceChatManager();
+        // as we are removing provider lets remove all opened chat rooms if any
+        for(int i = 0; i < chatRoomProvider.countChatRooms(); i++)
+            conferenceChatManager.closeChatRoom(
+                                            chatRoomProvider.getChatRoom(i));
 
-        // if provider is just disabled don't remove its stored rooms
-        if(!GuiActivator.getAccountManager().getStoredAccounts()
-                .contains(accountID))
+        if(permanently)
         {
-            String providerAccountUID = accountID.getAccountUniqueID();
+            chatRoomProvider.getProtocolProvider()
+                .removeRegistrationStateChangeListener(this);
 
-            for (String accountRootPropName
-                    : configService.getPropertyNamesByPrefix(prefix, true))
+            ConfigurationService configService
+                = GuiActivator.getConfigurationService();
+            String prefix = "net.java.sip.communicator.impl.gui.accounts";
+            AccountID accountID =
+                    chatRoomProvider.getProtocolProvider().getAccountID();
+
+            // if provider is just disabled don't remove its stored rooms
+            if(!GuiActivator.getAccountManager().getStoredAccounts()
+                    .contains(accountID))
             {
-                String accountUID
-                    = configService.getString(accountRootPropName);
+                String providerAccountUID = accountID.getAccountUniqueID();
 
-                if(accountUID.equals(providerAccountUID))
+                for (String accountRootPropName
+                        : configService.getPropertyNamesByPrefix(prefix, true))
                 {
-                    List<String> chatRooms
-                        = configService.getPropertyNamesByPrefix(
-                                accountRootPropName + ".chatRooms",
-                                true);
+                    String accountUID
+                        = configService.getString(accountRootPropName);
 
-                    for (String chatRoomPropName : chatRooms)
+                    if(accountUID.equals(providerAccountUID))
                     {
-                        configService.setProperty(
-                            chatRoomPropName + ".chatRoomName",
-                            null);
-                    }
+                        List<String> chatRooms
+                            = configService.getPropertyNamesByPrefix(
+                                    accountRootPropName + ".chatRooms",
+                                    true);
 
-                    configService.setProperty(accountRootPropName, null);
+                        for (String chatRoomPropName : chatRooms)
+                        {
+                            configService.setProperty(
+                                chatRoomPropName + ".chatRoomName",
+                                null);
+                        }
+
+                        configService.setProperty(accountRootPropName, null);
+                    }
                 }
             }
         }
@@ -234,14 +269,11 @@ public class ChatRoomList
         {
             chatRoomProvider.removeChatRoom(chatRoomWrapper);
 
-            if (chatRoomWrapper.isPersistent())
-            {
-                ConfigurationUtils.saveChatRoom(
-                    chatRoomProvider.getProtocolProvider(),
-                    chatRoomWrapper.getChatRoomID(),
-                    null,   // The new identifier.
-                    null);   // The name of the chat room.
-            }
+            ConfigurationUtils.saveChatRoom(
+                chatRoomProvider.getProtocolProvider(),
+                chatRoomWrapper.getChatRoomID(),
+                null,   // The new identifier.
+                null);   // The name of the chat room.
         }
     }
 
@@ -336,6 +368,11 @@ public class ChatRoomList
         ChatRoomProviderWrapper chatRoomProvider
             = findServerWrapperFromProvider(protocolProvider);
 
+        if(chatRoomProvider == null)
+        {
+            chatRoomProvider = addRegisteredChatProvider(protocolProvider);
+        }
+
         if (chatRoomProvider != null)
         {
             chatRoomProvider.synchronizeProvider();
@@ -400,6 +437,36 @@ public class ChatRoomList
             for (ChatRoomProviderWrapperListener target : providerChangeListeners)
             {
                 target.chatRoomProviderWrapperRemoved(provider);
+            }
+        }
+    }
+
+    /**
+     * Listens for changes of providers registration state, so we can use only
+     * registered providers.
+     * @param evt a <tt>RegistrationStateChangeEvent</tt> which describes the
+     *            event that occurred.
+     */
+    @Override
+    public void registrationStateChanged(RegistrationStateChangeEvent evt)
+    {
+        ProtocolProviderService pps = evt.getProvider();
+
+        if (evt.getNewState() == RegistrationState.REGISTERED)
+        {
+            // will use synchronizeOpSetWithLocalContactList
+            // to avoid any concurrency
+        }
+        else if(evt.getNewState() == RegistrationState.UNREGISTERED
+                 || evt.getNewState() == RegistrationState.AUTHENTICATION_FAILED
+                 || evt.getNewState() == RegistrationState.CONNECTION_FAILED)
+        {
+            ChatRoomProviderWrapper wrapper =
+                findServerWrapperFromProvider(pps);
+
+            if (wrapper != null)
+            {
+                removeChatProvider(wrapper, false);
             }
         }
     }

@@ -113,17 +113,26 @@ public class OperationSetTelephonyConferencingJabberImpl
         if(!(callPeer instanceof CallPeerJabberImpl))
             return;
 
+        //Don't send COINs to peers with might not be ready to accept COINs yet
+        CallPeerState peerState = callPeer.getState();
+        if (peerState == CallPeerState.CONNECTING
+                || peerState == CallPeerState.UNKNOWN
+                || peerState == CallPeerState.INITIATING_CALL
+                || peerState == CallPeerState.DISCONNECTED
+                || peerState == CallPeerState.FAILED)
+            return;
+
         final CallPeerJabberImpl callPeerJabber = (CallPeerJabberImpl)callPeer;
 
         final long timeSinceLastCoin = System.currentTimeMillis()
                 - callPeerJabber.getLastConferenceInfoSentTimestamp();
         if (timeSinceLastCoin < COIN_MIN_INTERVAL)
         {
-            if (callPeerJabber.isCoinScheduled())
+            if (callPeerJabber.isConfInfoScheduled())
                 return;
 
             logger.info("Scheduling to send a COIN to " + callPeerJabber);
-            callPeerJabber.setCoinScheduled(true);
+            callPeerJabber.setConfInfoScheduled(true);
             new Thread(new Runnable(){
                 @Override
                 public void run()
@@ -157,7 +166,7 @@ public class OperationSetTelephonyConferencingJabberImpl
                     ProtocolProviderServiceJabberImpl.URN_XMPP_JINGLE_COIN))
             {
                 logger.info(callPeer.getAddress() + " does not support COIN");
-                callPeerJabber.setCoinScheduled(false);
+                callPeerJabber.setConfInfoScheduled(false);
                 return;
             }
         }
@@ -200,7 +209,7 @@ public class OperationSetTelephonyConferencingJabberImpl
                         System.currentTimeMillis());
             }
         }
-        callPeerJabber.setCoinScheduled(false);
+        callPeerJabber.setConfInfoScheduled(false);
     }
 
     /**
@@ -370,13 +379,27 @@ public class OperationSetTelephonyConferencingJabberImpl
     public void processPacket(Packet packet)
     {
         CoinIQ coinIQ = (CoinIQ) packet;
+        String errorMessage = null;
 
         //first ack all "set" requests.
-        if (coinIQ.getType() == IQ.Type.SET)
+        IQ.Type type = coinIQ.getType();
+        if (type == IQ.Type.SET)
         {
             IQ ack = IQ.createResultIQ(coinIQ);
 
             parentProvider.getConnection().sendPacket(ack);
+        }
+        else if(type == IQ.Type.ERROR)
+        {
+            XMPPError error = coinIQ.getError();
+            if(error != null)
+            {
+                String msg = error.getMessage();
+                errorMessage = ((msg != null)? (msg + " ") : "")
+                    + "Error code: " + error.getCode();
+            }
+
+            logger.error("Received error in COIN packet. "+errorMessage);
         }
 
         String sid = coinIQ.getSID();
@@ -387,11 +410,19 @@ public class OperationSetTelephonyConferencingJabberImpl
                 = getBasicTelephony().getActiveCallsRepository().findCallPeer(
                         sid);
 
+
             if (callPeer != null)
             {
+                if(type == IQ.Type.ERROR)
+                {
+                    callPeer.fireConferenceMemberErrorEvent(errorMessage);
+                    return;
+                }
+
                 if (logger.isDebugEnabled())
                     logger.debug("Processing COIN from " + coinIQ.getFrom()
-                                    + " (version=" + coinIQ.getVersion() + ")");
+                            + " (version=" + coinIQ.getVersion() + ")");
+
                 handleCoin(callPeer, coinIQ);
             }
         }
@@ -433,7 +464,8 @@ public class OperationSetTelephonyConferencingJabberImpl
         ConferenceInfoDocument confInfo
                 = super.getCurrentConferenceInfo(callPeer);
 
-        if (callPeer instanceof CallPeerJabberImpl)
+        if (callPeer instanceof CallPeerJabberImpl
+                && confInfo != null)
         {
             confInfo.setSid(((CallPeerJabberImpl)callPeer).getSID());
         }

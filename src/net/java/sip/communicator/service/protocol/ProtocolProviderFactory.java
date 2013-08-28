@@ -634,7 +634,20 @@ public abstract class ProtocolProviderFactory
             registration =
                 registeredAccounts.get(accountID);
         }
-        return (registration == null) ? null : registration.getReference();
+
+        try
+        {
+            return (registration == null) ? null : registration.getReference();
+        }
+        catch (IllegalStateException ise)
+        {
+            synchronized (registeredAccounts)
+            {
+                registeredAccounts.remove(accountID);
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -835,6 +848,12 @@ public abstract class ProtocolProviderFactory
                         "CredentialsStorageService failed to storePassword",
                         OperationFailedException.GENERAL_ERROR);
         }
+
+        // Update password property also in the AccountID
+        // to prevent it from being removed during account reload
+        // in some cases.
+        accountID.setPassword(password);
+
     }
 
     /**

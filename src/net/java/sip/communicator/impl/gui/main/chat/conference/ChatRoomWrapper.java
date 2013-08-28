@@ -6,6 +6,10 @@
  */
 package net.java.sip.communicator.impl.gui.main.chat.conference;
 
+import net.java.sip.communicator.impl.gui.*;
+import net.java.sip.communicator.impl.gui.customcontrols.*;
+import net.java.sip.communicator.impl.gui.main.chat.*;
+import net.java.sip.communicator.impl.gui.utils.*;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.util.*;
 
@@ -56,6 +60,12 @@ public class ChatRoomWrapper
      * If not overridden we query the wrapped room.
      */
     private Boolean persistent = null;
+    
+    /**
+     * The prefix needed by the credential storage service to store the password
+     * of the chat room.
+     */
+    private String passwordPrefix;
 
     /**
      * Creates a <tt>ChatRoomWrapper</tt> by specifying the protocol provider,
@@ -73,6 +83,10 @@ public class ChatRoomWrapper
         this.parentProvider = parentProvider;
         this.chatRoomID = chatRoomID;
         this.chatRoomName = chatRoomName;
+        passwordPrefix = ConfigurationUtils.getChatRoomPrefix(
+            getParentProvider().getProtocolProvider().getAccountID()
+            .getAccountUniqueID(), chatRoomID) + ".password";
+        
     }
 
     /**
@@ -171,6 +185,39 @@ public class ChatRoomWrapper
     {
         this.persistent = value;
     }
+    
+    
+    /**
+     * Stores the password for the chat room.
+     * 
+     * @param password the password to store
+     */
+    public void savePassword(String password)
+    {
+        
+        GuiActivator.getCredentialsStorageService()
+            .storePassword(passwordPrefix, password);
+    }
+    
+    /**
+     * Returns the password for the chat room.
+     * 
+     * @return the password
+     */
+    public String loadPassword()
+    {
+        return GuiActivator.getCredentialsStorageService()
+            .loadPassword(passwordPrefix);
+    }
+    
+    /**
+     * Removes the saved password for the chat room.
+     */
+    public void removePassword()
+    {
+        GuiActivator.getCredentialsStorageService()
+            .removePassword(passwordPrefix);
+    }
 
     /**
      * Is room set to auto join on start-up.
@@ -225,5 +272,63 @@ public class ChatRoomWrapper
                 getParentProvider().getProtocolProvider(),
                 chatRoomID, AUTOJOIN_PROPERTY_NAME, null);
         }
+    }
+    
+    /**
+     * Opens a dialog with a field for the nickname and returns the nickname.
+     *
+     * @return the nickname
+     */
+    public String getNickname()
+    {
+        String nickName = null;
+        ChatOperationReasonDialog reasonDialog =
+            new ChatOperationReasonDialog(GuiActivator.getResources()
+                .getI18NString("service.gui.CHANGE_NICKNAME"), GuiActivator
+                .getResources().getI18NString(
+                    "service.gui.CHANGE_NICKNAME_LABEL"), false, true);
+        reasonDialog.setIcon(ImageLoader.getImage(
+                    ImageLoader.CHANGE_NICKNAME_ICON));
+        
+        final OperationSetServerStoredAccountInfo accountInfoOpSet
+            =  getParentProvider().getProtocolProvider().getOperationSet(
+                    OperationSetServerStoredAccountInfo.class);
+        
+        String displayName = "";
+        if (accountInfoOpSet != null)
+        {
+            displayName = AccountInfoUtils.getDisplayName(accountInfoOpSet);
+        }
+        
+        if(displayName == null || displayName.length() == 0)
+        {
+            displayName = GuiActivator.getGlobalDisplayDetailsService()
+                .getGlobalDisplayName();
+            if(displayName == null || displayName.length() == 0)
+            {
+                displayName = getParentProvider().getProtocolProvider()
+                    .getAccountID().getUserID();
+                if(displayName != null)
+                {
+                    int atIndex = displayName.lastIndexOf("@");
+                    if (atIndex > 0)
+                        displayName = displayName.substring(0, atIndex);
+                }
+            }
+        }
+        reasonDialog.setReasonFieldText(displayName);
+        
+        int result = reasonDialog.showDialog();
+
+        if (result == MessageDialog.OK_RETURN_CODE)
+        {
+            nickName = reasonDialog.getReason().trim();
+            ConfigurationUtils.updateChatRoomProperty(
+                getParentProvider().getProtocolProvider(),
+                getChatRoomID(), "userNickName", nickName);
+            
+        }
+
+        return nickName;
     }
 }

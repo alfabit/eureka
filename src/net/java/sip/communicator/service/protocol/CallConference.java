@@ -193,6 +193,20 @@ public class CallConference
             {
                 CallConference.this.onCallPeerConferenceEvent(ev);
             }
+            
+            /**
+             * {@inheritDoc}
+             *
+             * Invokes
+             * {@link CallConference#onCallPeerConferenceEvent(
+             * CallPeerConferenceEvent)}.
+             */
+            @Override
+            public void conferenceMemberErrorReceived(
+                CallPeerConferenceEvent ev)
+            {
+                CallConference.this.onCallPeerConferenceEvent(ev);
+            }
         };
 
     /**
@@ -453,7 +467,9 @@ public class CallConference
             }
             finally
             {
-                if (CallState.CALL_ENDED.equals(ev.getNewValue()))
+                if (CallChangeEvent.CALL_STATE_CHANGE
+                        .equals(ev.getPropertyName())
+                    && CallState.CALL_ENDED.equals(ev.getNewValue()))
                 {
                     /*
                      * Should not be vital because Call will remove itself.
@@ -691,6 +707,9 @@ public class CallConference
                 break;
             case CallPeerConferenceEvent.CONFERENCE_MEMBER_REMOVED:
                 l.conferenceMemberRemoved(ev);
+                break;
+            case CallPeerConferenceEvent.CONFERENCE_MEMBER_ERROR_RECEIVED:
+                l.conferenceMemberErrorReceived(ev);
                 break;
             default:
                 throw new UnsupportedOperationException(

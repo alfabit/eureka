@@ -118,24 +118,6 @@ public class CallPeerMediaHandlerJabberImpl
     private final Object transportManagerSyncRoot = new Object();
 
     /**
-     * The current value of the 'senders' field of the audio content in the
-     * Jingle session with the <tt>CallPeer</tt> associated with this
-     * <tt>CallPeerMediaHandlerJabberImpl</tt>.
-     * <tt>null</tt> should be interpreted as 'both', which is the default in
-     * Jingle if the XML attribute is missing.
-     */
-    private SendersEnum audioSenders = SendersEnum.none;
-
-    /**
-     * The current value of the 'senders' field of the video content in the
-     * Jingle session with the <tt>CallPeer</tt> associated with this
-     * <tt>CallPeerMediaHandlerJabberImpl</tt>.
-     * <tt>null</tt> should be interpreted as 'both', which is the default in
-     * Jingle if the XML attribute is missing.
-     */
-    private SendersEnum videoSenders = SendersEnum.none;
-
-    /**
      * Creates a new handler that will be managing media streams for
      * <tt>peer</tt>.
      *
@@ -150,7 +132,7 @@ public class CallPeerMediaHandlerJabberImpl
     }
 
     /**
-     * Determines and sets the direction that a stream, which has been place on
+     * Determines the direction that a stream, which has been placed on
      * hold by the remote party, would need to go back to after being
      * re-activated. If the stream is not currently on hold (i.e. it is still
      * sending media), this method simply returns its current direction.
@@ -195,8 +177,6 @@ public class CallPeerMediaHandlerJabberImpl
         // 4. the device direction
         postHoldDir = postHoldDir.and(device.getDirection());
 
-        stream.setDirection(postHoldDir);
-
         return postHoldDir;
     }
 
@@ -231,7 +211,9 @@ public class CallPeerMediaHandlerJabberImpl
         throws OperationFailedException
     {
         MediaType mediaType = dev.getMediaType();
+        //this is the direction to be used in the jingle session
         MediaDirection direction = dev.getDirection();
+        CallPeerJabberImpl peer = getPeer();
 
         /*
          * In the case of RTP translation performed by the conference focus,
@@ -240,6 +222,24 @@ public class CallPeerMediaHandlerJabberImpl
         if (!(MediaType.VIDEO.equals(mediaType)
                 && isRTPTranslationEnabled(mediaType)))
             direction = direction.and(getDirectionUserPreference(mediaType));
+
+        /*
+         * Check if we need to announce sending on behalf of other peers
+         */
+        if (peer.getCall().isConferenceFocus())
+        {
+            for (CallPeerJabberImpl anotherPeer
+                    : peer.getCall().getCallPeerList())
+            {
+                if (anotherPeer != peer
+                        && anotherPeer.getDirection(mediaType).allowsReceiving())
+                {
+                    direction = direction.or(MediaDirection.SENDONLY);
+                    break;
+                }
+            }
+        }
+
         if (isLocallyOnHold())
             direction = direction.and(MediaDirection.SENDONLY);
 
@@ -258,7 +258,8 @@ public class CallPeerMediaHandlerJabberImpl
         {
             ContentPacketExtension content
                 = createContentForOffer(
-                        getLocallySupportedFormats(dev,
+                        getLocallySupportedFormats(
+                                dev,
                                 sendQualityPreset,
                                 receiveQualityPreset),
                         direction,
@@ -602,12 +603,13 @@ public class CallPeerMediaHandlerJabberImpl
                 = JingleUtils.getRtpDescription(theirContent);
             MediaFormat format = null;
 
+            List<MediaFormat> localFormats = getLocallySupportedFormats(dev);
             for(PayloadTypePacketExtension payload
                     : theirDescription.getPayloadTypes())
             {
                 format = JingleUtils.payloadTypeToMediaFormat(
                             payload, getDynamicPayloadTypes());
-                if(format != null)
+                if(format != null && localFormats.contains(format))
                     break;
             }
 
@@ -806,20 +808,9 @@ public class CallPeerMediaHandlerJabberImpl
          * with the CallPeers from which they are actually being sent. That's
          * why the server will report them to the conference focus.
          */
-        TransportManagerJabberImpl transportManager = this.transportManager;
-
-        if (transportManager instanceof RawUdpTransportManager)
-        {
-            RawUdpTransportManager rawUdpTransportManager
-                = (RawUdpTransportManager) transportManager;
-            ColibriConferenceIQ.Channel channel
-                = rawUdpTransportManager.getColibriChannel(
-                        mediaType,
-                        false /* remote */);
-
-            if (channel != null)
-                return channel.getSSRCs();
-        }
+        ColibriConferenceIQ.Channel channel = getColibriChannel(mediaType);
+        if (channel != null)
+            return channel.getSSRCs();
 
         /*
          * XXX The fallback to the super implementation that follows may lead to
@@ -1216,8 +1207,6 @@ public class CallPeerMediaHandlerJabberImpl
         for (ContentPacketExtension content : answer)
         {
             remoteContentMap.put(content.getName(), content);
-            setSenders(MediaType.parseString(content.getName()),
-                    content.getSenders());
 
             boolean masterStream = false;
             // if we have more than one stream, lets the audio be the master
@@ -1427,23 +1416,23 @@ public class CallPeerMediaHandlerJabberImpl
          * the other participants.
          */
         CallJabberImpl call = getPeer().getCall();
-        if (call != null && call.getConference().isConferenceFocus())
+        if ((call != null) && call.getConference().isConferenceFocus())
         {
             for (CallPeerJabberImpl peer : call.getCallPeerList())
             {
                 SendersEnum senders
-                        = peer.getMediaHandler().getSenders(mediaType);
+                    = peer.getSenders(mediaType);
                 boolean initiator = peer.isInitiator();
                 //check if the direction of the jingle session we have with
                 //this peer allows us receiving media. If senders is null,
                 //assume the default of 'both'
-                if (senders == null ||
-                        (SendersEnum.both == senders) ||
-                        (initiator && SendersEnum.initiator == senders) ||
-                        (!initiator && SendersEnum.responder == senders))
+                if ((senders == null)
+                        || (SendersEnum.both == senders)
+                        || (initiator && SendersEnum.initiator == senders)
+                        || (!initiator && SendersEnum.responder == senders))
                 {
                     remoteDirection
-                            = remoteDirection.or(MediaDirection.SENDONLY);
+                        = remoteDirection.or(MediaDirection.SENDONLY);
                 }
             }
         }
@@ -1453,10 +1442,11 @@ public class CallPeerMediaHandlerJabberImpl
 
         // update the RTP extensions that we will be exchanging.
         List<RTPExtension> remoteRTPExtensions
-                = JingleUtils.extractRTPExtensions(
-                        description, getRtpExtensionsRegistry());
+            = JingleUtils.extractRTPExtensions(
+                    description,
+                    getRtpExtensionsRegistry());
         List<RTPExtension> supportedExtensions
-                = getExtensionsForType(mediaType);
+            = getExtensionsForType(mediaType);
         List<RTPExtension> rtpExtensions
             = intersectRTPExtensions(remoteRTPExtensions, supportedExtensions);
 
@@ -1475,9 +1465,6 @@ public class CallPeerMediaHandlerJabberImpl
         // check for options from remote party and set them locally
         if(mediaType.equals(MediaType.VIDEO) && modify)
         {
-            QualityPreset sendQualityPreset = null;
-            QualityPreset receiveQualityPreset = null;
-
             // update stream
             MediaStream stream = getStream(MediaType.VIDEO);
 
@@ -1496,15 +1483,18 @@ public class CallPeerMediaHandlerJabberImpl
 
             if(qualityControls != null)
             {
-                receiveQualityPreset = qualityControls.getRemoteReceivePreset();
-                sendQualityPreset = qualityControls.getRemoteSendMaxPreset();
+                QualityPreset receiveQualityPreset
+                    = qualityControls.getRemoteReceivePreset();
+                QualityPreset sendQualityPreset
+                    = qualityControls.getRemoteSendMaxPreset();
 
                 supportedFormats
                     = (dev == null)
                         ? null
                         : intersectFormats(
                                 supportedFormats,
-                                getLocallySupportedFormats(dev,
+                                getLocallySupportedFormats(
+                                        dev,
                                         sendQualityPreset,
                                         receiveQualityPreset));
             }
@@ -1640,14 +1630,15 @@ public class CallPeerMediaHandlerJabberImpl
                 continue;
             }
 
+            SendersEnum senders = JingleUtils.getSenders(
+                    direction,
+                    !getPeer().isInitiator());
             // create the answer description
             ContentPacketExtension ourContent
                 = JingleUtils.createDescription(
                         content.getCreator(),
                         content.getName(),
-                        JingleUtils.getSenders(
-                                direction,
-                                !getPeer().isInitiator()),
+                        senders,
                         mutuallySupportedFormats,
                         rtpExtensions,
                         getDynamicPayloadTypes(),
@@ -1813,7 +1804,6 @@ public class CallPeerMediaHandlerJabberImpl
 
         if(ext != null)
         {
-            setSenders(MediaType.parseString(name), content.getSenders());
             if(modify)
             {
                 processContent(content, modify, false);
@@ -1863,7 +1853,6 @@ public class CallPeerMediaHandlerJabberImpl
      */
     public void removeContent(String name)
     {
-        setSenders(MediaType.parseString(name), SendersEnum.none);
         removeContent(localContentMap, name);
         removeContent(remoteContentMap, name);
         getTransportManager().removeContent(name);
@@ -1880,29 +1869,56 @@ public class CallPeerMediaHandlerJabberImpl
     {
         this.remotelyOnHold = onHold;
 
-        MediaStream audioStream = getStream(MediaType.AUDIO);
-        MediaStream videoStream = getStream(MediaType.VIDEO);
+        for (MediaType mediaType : MediaType.values())
+        {
+            MediaStream stream = getStream(mediaType);
+            if (stream == null)
+                continue;
 
-        if(remotelyOnHold)
-        {
-            if(audioStream != null)
+            if (getPeer().isJitsiVideoBridge())
             {
-                audioStream.setDirection(audioStream.getDirection()
-                            .and(MediaDirection.RECVONLY));
+                /*
+                 * If we are the focus of a videobridge conference, we
+                 * need to ask the videobridge to change the stream
+                 * direction on behalf of us.
+                 */
+                ColibriConferenceIQ.Channel channel
+                        = getColibriChannel(mediaType);
+                if(remotelyOnHold)
+                {
+                    getPeer().getCall().setChannelDirection(
+                            channel.getID(),
+                            mediaType,
+                            MediaDirection.INACTIVE);
+                }
+                else
+                {
+                    //TODO: does SENDRECV always make sense?
+                    getPeer().getCall().setChannelDirection(
+                            channel.getID(),
+                            mediaType,
+                            MediaDirection.SENDRECV);
+                }
             }
-            if(videoStream != null)
+            else //no videobridge
             {
-                videoStream.setDirection(videoStream.getDirection()
-                            .and(MediaDirection.RECVONLY));
+                if (remotelyOnHold)
+                {
+                    /*
+                     * In conferences we use INACTIVE to prevent, for example,
+                     * on-hold music from being played to all the participants.
+                     */
+                    MediaDirection newDirection
+                            = getPeer().getCall().isConferenceFocus()
+                            ? MediaDirection.INACTIVE
+                            : stream.getDirection().and(MediaDirection.RECVONLY);
+                    stream.setDirection(newDirection);
+                }
+                else
+                {
+                    stream.setDirection(calculatePostHoldDirection(stream));
+                }
             }
-        }
-        else
-        {
-            //off hold - make sure that we re-enable sending if that's
-            if(audioStream != null)
-                calculatePostHoldDirection(audioStream);
-            if(videoStream != null)
-                calculatePostHoldDirection(videoStream);
         }
     }
 
@@ -2059,42 +2075,87 @@ public class CallPeerMediaHandlerJabberImpl
         }
     }
 
+
+
     /**
-     * Get the current value of the <tt>senders</tt> field of the content with
-     * name <tt>mediaType</tt> in the Jingle session with the <tt>CallPeer</tt>
-     * associated with this <tt>CallPeerMediaHandlerJabberImpl</tt>.
-     * @param mediaType the <tt>MediaType</tt> for which to get the current
-     * value of the <tt>senders</tt> field.
-     * @return the current value of the <tt>senders</tt> field of the content
-     * with name <tt>mediaType</tt> in the Jingle session with the
-     * <tt>CallPeer</tt> associated with this
-     * <tt>CallPeerMediaHandlerJabberImpl</tt>
+     * If Jitsi Videobridge is in use, returns the
+     * <tt>ColibriConferenceIQ.Channel</tt> that this
+     * <tt>CallPeerMediaHandler</tt> uses for media of type <tt>mediaType</tt>.
+     * Otherwise, returns <tt>null</tt>
+     *
+     * @param mediaType the <tt>MediaType</tt> for which to return a
+     * <tt>ColibriConferenceIQ.Channel</tt>
+     * @return the <tt>ColibriConferenceIQ.Channel</tt> that this
+     * <tt>CallPeerMediaHandler</tt> uses for media of type <tt>mediaType</tt>
+     * or <tt>null</tt>.
      */
-    public SendersEnum getSenders(MediaType mediaType)
+    private ColibriConferenceIQ.Channel getColibriChannel(MediaType mediaType)
     {
-        if (MediaType.AUDIO.equals(mediaType))
-            return audioSenders;
-        else if (MediaType.VIDEO.equals(mediaType))
-            return videoSenders;
-        else
-            throw new IllegalArgumentException("mediaType");
+        ColibriConferenceIQ.Channel channel = null;
+
+        if (getPeer().isJitsiVideoBridge()
+                && (transportManager instanceof RawUdpTransportManager))
+        {
+            channel = ((RawUdpTransportManager) transportManager)
+                    .getColibriChannel(mediaType, false /* remote */);
+        }
+
+        return channel;
     }
 
     /**
-     * Set the current value of the <tt>senders</tt> field of the content with
-     * name <tt>mediaType</tt> in the Jingle session with the <tt>CallPeer</tt>
-     * associated with this <tt>CallPeerMediaHandlerJabberImpl</tt>.
-     * @param mediaType the <tt>MediaType</tt> for which to get the current
-     * value of the <tt>senders</tt> field.
-     * @param senders the value to set
+     * {@inheritDoc}
+     *
+     * The super implementation relies on the direction of the streams and is
+     * therefore not accurate when we use a videobridge.
      */
-    public void setSenders(MediaType mediaType, SendersEnum senders)
+    @Override
+    public boolean isRemotelyOnHold()
     {
-        if (MediaType.AUDIO.equals(mediaType))
-            this.audioSenders = senders;
-        else if (MediaType.VIDEO.equals(mediaType))
-            this.videoSenders = senders;
-        else
-            throw new IllegalArgumentException("mediaType");
+        return remotelyOnHold;
     }
+
+    /**
+     * {@inheritDoc}
+     *
+     * Handles the case when a videobridge is in use.
+     *
+     * @param locallyOnHold <tt>true</tt> if we are to make our streams
+     * stop transmitting and <tt>false</tt> if we are to start transmitting
+     */
+    @Override
+    public void setLocallyOnHold(boolean locallyOnHold)
+    {
+        if (!getPeer().isJitsiVideoBridge())
+        {
+            super.setLocallyOnHold(locallyOnHold);
+        }
+        else
+        {
+            this.locallyOnHold = locallyOnHold;
+
+            if (!locallyOnHold
+                && CallPeerState.ON_HOLD_MUTUALLY.equals(getPeer().getState()))
+                return;
+
+            for (MediaType mediaType : MediaType.values())
+            {
+                ColibriConferenceIQ.Channel channel
+                        = getColibriChannel(mediaType);
+                if (channel == null)
+                    continue;
+
+                MediaDirection direction
+                        = locallyOnHold
+                        ? MediaDirection.INACTIVE
+                        : MediaDirection.SENDRECV;
+
+                getPeer().getCall().setChannelDirection(
+                        channel.getID(),
+                        mediaType,
+                        direction);
+            }
+        }
+    }
+
 }

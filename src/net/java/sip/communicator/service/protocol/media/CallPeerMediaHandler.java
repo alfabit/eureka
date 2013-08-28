@@ -134,7 +134,7 @@ public abstract class CallPeerMediaHandler<T extends MediaAwareCallPeer<?,?,?>>
     /**
      * Determines whether we have placed the call on hold locally.
      */
-    private boolean locallyOnHold = false;
+    protected boolean locallyOnHold = false;
 
     /**
      * The listener that the <tt>CallPeer</tt> registered for local user audio
@@ -361,23 +361,28 @@ public abstract class CallPeerMediaHandler<T extends MediaAwareCallPeer<?,?,?>>
                 if (stream == null)
                     continue;
 
-                /*
-                 * Update the stream device, if necessary
-                 */
+                // Update the stream device, if necessary.
                 MediaDevice oldDevice = stream.getDevice();
+
                 if (oldDevice != null)
                 {
                     if (oldDevice instanceof MediaDeviceWrapper)
-                        oldDevice = ((MediaDeviceWrapper) oldDevice)
-                                        .getWrappedDevice();
+                    {
+                        oldDevice
+                            = ((MediaDeviceWrapper) oldDevice)
+                                .getWrappedDevice();
+                    }
 
                     MediaDevice newDevice = getDefaultDevice(mediaType);
-                    MediaDevice wrappedNewDevice = newDevice;
-                    if (newDevice instanceof MediaDeviceWrapper)
-                        wrappedNewDevice = ((MediaDeviceWrapper) newDevice)
-                                                .getWrappedDevice();
+                    MediaDevice newWrappedDevice = newDevice;
 
-                    if (oldDevice != wrappedNewDevice)
+                    if (newDevice instanceof MediaDeviceWrapper)
+                    {
+                        newWrappedDevice
+                            = ((MediaDeviceWrapper) newDevice)
+                                .getWrappedDevice();
+                    }
+                    if (oldDevice != newWrappedDevice)
                         stream.setDevice(newDevice);
                 }
 
@@ -866,7 +871,6 @@ public abstract class CallPeerMediaHandler<T extends MediaAwareCallPeer<?,?,?>>
             encodingConfiguration.loadProperties(
                     accountProperties,
                     ProtocolProviderFactory.ENCODING_PROP_PREFIX);
-
             return
                 mediaDevice.getSupportedFormats(
                         sendPreset, receivePreset,
@@ -1534,7 +1538,7 @@ public abstract class CallPeerMediaHandler<T extends MediaAwareCallPeer<?,?,?>>
      * (according to the value of <tt>locallyOnHold</tt>). This would also be
      * taken into account when the next update offer is generated.
      *
-     * @param locallyOnHold <tt>true</tt> if we are to make our audio stream
+     * @param locallyOnHold <tt>true</tt> if we are to make our streams
      * stop transmitting and <tt>false</tt> if we are to start transmitting
      * again.
      */
@@ -1549,23 +1553,30 @@ public abstract class CallPeerMediaHandler<T extends MediaAwareCallPeer<?,?,?>>
         if(locallyOnHold)
         {
             MediaStream audioStream = getStream(MediaType.AUDIO);
+            MediaDirection direction
+                    = getPeer().getCall().isConferenceFocus()
+                    ? MediaDirection.INACTIVE
+                    : audioStream.getDirection().and(MediaDirection.SENDONLY);
 
             if(audioStream != null)
             {
-                audioStream.setDirection(
-                        audioStream.getDirection().and(
-                                MediaDirection.SENDONLY));
-                audioStream.setMute(locallyOnHold);
+                audioStream.setDirection(direction);
+                audioStream.setMute(true);
             }
 
             MediaStream videoStream = getStream(MediaType.VIDEO);
-
             if(videoStream != null)
             {
-                videoStream.setDirection(
-                        videoStream.getDirection().and(
-                                MediaDirection.SENDONLY));
-                videoStream.setMute(locallyOnHold);
+                direction = getPeer().getCall().isConferenceFocus()
+                        ? MediaDirection.INACTIVE
+                        : videoStream.getDirection().and(MediaDirection.SENDONLY);
+                /*
+                 * Set the video direction to INACTIVE, because currently we
+                 * cannot mute video streams.
+                 */
+                videoStream.setDirection(MediaDirection.INACTIVE);
+                //videoStream.setDirection(direction);
+                //videoStream.setMute(true);
             }
         }
         /*
@@ -1580,7 +1591,7 @@ public abstract class CallPeerMediaHandler<T extends MediaAwareCallPeer<?,?,?>>
             {
                 audioStream.setDirection(
                         audioStream.getDirection().or(MediaDirection.SENDONLY));
-                audioStream.setMute(locallyOnHold);
+                audioStream.setMute(false);
             }
 
             MediaStream videoStream = getStream(MediaType.VIDEO);
@@ -1590,7 +1601,7 @@ public abstract class CallPeerMediaHandler<T extends MediaAwareCallPeer<?,?,?>>
             {
                 videoStream.setDirection(
                         videoStream.getDirection().or(MediaDirection.SENDONLY));
-                videoStream.setMute(locallyOnHold);
+                videoStream.setMute(false);
             }
         }
     }

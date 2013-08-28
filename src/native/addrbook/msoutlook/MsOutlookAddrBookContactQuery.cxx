@@ -67,9 +67,6 @@ static jboolean MsOutlookAddrBookContactQuery_foreachContactInMsgStoresTable
 static jboolean MsOutlookAddrBookContactQuery_foreachMailUser
     (ULONG objType, LPUNKNOWN iUnknown,
      const char * query, void * callback, void * callbackObject);
-static jboolean MsOutlookAddrBookContactQuery_foreachMailUserInAddressBook
-    (LPMAPISESSION mapiSession, const char * query,
-     void * callback, void * callbackObject);
 static jboolean MsOutlookAddrBookContactQuery_foreachMailUserInContainerTable
     (LPMAPICONTAINER mapiContainer, LPMAPITABLE mapiTable,
     const char * query, void * callback, void * callbackObject);
@@ -397,21 +394,11 @@ void MsOutlookAddrBookContactQuery_foreachMailUser(
         return;
     }
 
-    jboolean proceed
-        = MsOutlookAddrBookContactQuery_foreachContactInMsgStoresTable(
-                mapiSession,
-                query,
-                callback,
-                callbackObject);
-
-    if(proceed)
-    {
-        MsOutlookAddrBookContactQuery_foreachMailUserInAddressBook(
-                mapiSession,
-                query,
-                callback,
-                callbackObject);
-    }
+    MsOutlookAddrBookContactQuery_foreachContactInMsgStoresTable(
+            mapiSession,
+            query,
+            callback,
+            callbackObject);
 
     MAPISession_unlock();
 }
@@ -505,45 +492,6 @@ MsOutlookAddrBookContactQuery_foreachMailUser
         break;
     }
     }
-    return proceed;
-}
-
-static jboolean
-MsOutlookAddrBookContactQuery_foreachMailUserInAddressBook
-    (LPMAPISESSION mapiSession, const char * query,
-     void * callback, void * callbackObject)
-{
-    HRESULT hResult;
-    LPADRBOOK adrBook;
-    jboolean proceed = JNI_FALSE;
-
-    hResult = mapiSession->OpenAddressBook(0, NULL, AB_NO_DIALOG, &adrBook);
-    if (HR_SUCCEEDED(hResult))
-    {
-        ULONG objType;
-        LPUNKNOWN iUnknown;
-
-        hResult = adrBook->OpenEntry(
-                0,
-                NULL,
-                NULL,
-                MsOutlookAddrBookContactQuery_openEntryUlFlags,
-                &objType,
-                &iUnknown);
-
-        if (HR_SUCCEEDED(hResult))
-        {
-            proceed
-                = MsOutlookAddrBookContactQuery_foreachMailUser(
-                        objType, iUnknown,
-                        query, callback, callbackObject);
-
-            iUnknown->Release();
-        }
-
-        adrBook->Release();
-    }
-
     return proceed;
 }
 
@@ -1144,13 +1092,13 @@ int MsOutlookAddrBookContactQuery_IMAPIProp_1DeleteProp
     ULONG baseGroupEntryIdProp = 0;
     switch(propId)
     {
-        case 0x00008083: // dispidEmail1EmailAddress
+        case 0x00008084: // PidLidEmail1OriginalDisplayName
             baseGroupEntryIdProp = 0x00008080;
             break;
-        case 0x00008093: // dispidEmail2EmailAddress
+        case 0x00008094: // PidLidEmail2OriginalDisplayName
             baseGroupEntryIdProp = 0x00008090;
             break;
-        case 0x000080A3: // dispidEmail3EmailAddress
+        case 0x000080A4: // PidLidEmail3OriginalDisplayName
             baseGroupEntryIdProp = 0x000080A0;
             break;
     }
@@ -1405,7 +1353,7 @@ HRESULT MsOutlookAddrBookContactQuery_IMAPIProp_1GetProps(
  * @return 1 if the modification succeded. 0 otherwise.
  */
 int MsOutlookAddrBookContactQuery_IMAPIProp_1SetPropString
-    (long propId, const char* nativeValue, const char* nativeEntryId)
+    (long propId, const wchar_t* nativeValue, const char* nativeEntryId)
 {
     HRESULT hResult;
 
@@ -1416,31 +1364,20 @@ int MsOutlookAddrBookContactQuery_IMAPIProp_1SetPropString
         return 0;
     }
 
-    size_t valueLength = strlen(nativeValue);
+    size_t valueLength = wcslen(nativeValue);
     LPWSTR wCharValue = (LPWSTR)::malloc((valueLength + 1) * sizeof(wchar_t));
-    if(mbstowcs(wCharValue, nativeValue, valueLength + 1)
-            != valueLength)
-    {
-        fprintf(stderr,
-                "setPropUnicode (addrbook/MsOutlookAddrBookContactQuery.c): \
-                    \n\tmbstowcs\n");
-        fflush(stderr);
-        ((LPMAPIPROP)  mapiProp)->Release();
-        ::free(wCharValue);
-        wCharValue = NULL;
-        return 0;
-    }
+    memcpy(wCharValue, nativeValue, (valueLength + 1) * sizeof(wchar_t));
 
     ULONG baseGroupEntryIdProp = 0;
     switch(propId)
     {
-        case 0x00008083: // dispidEmail1EmailAddress
+        case 0x00008084: // PidLidEmail1OriginalDisplayName
             baseGroupEntryIdProp = 0x00008080;
             break;
-        case 0x00008093: // dispidEmail2EmailAddress
+        case 0x00008094: // PidLidEmail2OriginalDisplayName
             baseGroupEntryIdProp = 0x00008090;
             break;
-        case 0x000080A3: // dispidEmail3EmailAddress
+        case 0x000080A4: // PidLidEmail3OriginalDisplayName
             baseGroupEntryIdProp = 0x000080A0;
             break;
     }
@@ -1487,25 +1424,42 @@ int MsOutlookAddrBookContactQuery_IMAPIProp_1SetPropString
             LONG providerEmailList[1];
             switch(propId)
             {
-                case 0x00008083: // dispidEmail1EmailAddress
+                case 0x00008084: // PidLidEmail1OriginalDisplayName
                     providerEmailList[0] = 0x00000000;
                     propArray[1].Value.l |= 0x00000001;
                     break;
-                case 0x00008093: // dispidEmail2EmailAddress
+                case 0x00008094: // PidLidEmail2OriginalDisplayName
                     providerEmailList[0] = 0x00000001;
                     propArray[1].Value.l |= 0x00000002;
                     break;
-                case 0x000080A3: // dispidEmail3EmailAddress
+                case 0x000080A4: // PidLidEmail3OriginalDisplayName
                     providerEmailList[0] = 0x00000002;
                     propArray[1].Value.l |= 0x00000004;
                     break;
             }
+
             propArray[0].Value.MVl.cValues = 1;
             propArray[0].Value.MVl.lpl = providerEmailList;
 
-            propArray[2].Value.lpszW = wCharValue;
-            propArray[3].Value.lpszW = addressType;
-            propArray[4].Value.lpszW = wCharValue;
+            if(propArray[2].ulPropTag == PT_ERROR
+                    || propArray[2].Value.err == MAPI_E_NOT_FOUND
+                    || propArray[2].Value.lpszW == NULL)
+            {
+                propArray[2].Value.lpszW = wCharValue;
+            }
+            if(propArray[3].ulPropTag == PT_ERROR
+                    || propArray[3].Value.err == MAPI_E_NOT_FOUND
+                    || propArray[3].Value.lpszW == NULL)
+            {
+                propArray[3].Value.lpszW = addressType;
+            }
+            if(propArray[4].ulPropTag == PT_ERROR
+                    || propArray[4].Value.err == MAPI_E_NOT_FOUND
+                    || propArray[4].Value.lpszW == NULL
+                    || wcsncmp(propArray[3].Value.lpszW, addressType, 4) == 0)
+            {
+                propArray[4].Value.lpszW = wCharValue;
+            }
             propArray[5].Value.lpszW = wCharValue;
 
             if(MsOutlookAddrBookContactQuery_createEmailAddress(
@@ -1938,18 +1892,6 @@ int MsOutlookAddrBookContactQuery_compareEntryIds(
         result = res;
     }
 
-    if(strcmp(id1, id2) == 0)
-    {
-        fprintf(stderr,
-                "CHENZO compareEntryIds: \
-                \n\tid1: %s\
-                \n\tid2: %s\
-                \n\tresult: %d\n",
-                id1,
-                id2,
-                result);
-        fflush(stderr);
-    }
     mapiId1->Release();
     MAPIFreeBuffer(contactId1.lpb);
     mapiId2->Release();

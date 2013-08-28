@@ -352,25 +352,47 @@ public class ChatContactRightButtonMenu
                     GuiActivator.getResources().getI18NString(
                     "service.gui.CHANGE_NICKNAME_LABEL"),
                     "Ok",
-                    false);
+                    false, true);
 
-           // reasonDialog.setIconImage(ImageLoader.getImage(
-           //   ImageLoader.CHANGE_NICKNAME_ICON_16x16));
+            reasonDialog.setIconImage(ImageLoader.getImage(
+              ImageLoader.CHANGE_NICKNAME_ICON));
             reasonDialog.setReasonFieldText(chatContact.getName());
 
             int result = reasonDialog.showDialog();
 
             if (result == MessageDialog.OK_RETURN_CODE)
             {
+                String nickname = reasonDialog.getReason().trim();
                 try
                 {
-                    room.setUserNickname(reasonDialog.getReason().trim());
+                    room.setUserNickname(nickname);
+                    ConfigurationUtils.updateChatRoomProperty(
+                        room.getParentProvider(),
+                        room.getIdentifier(),
+                        "userNickName", nickname);
                 }
                 catch (OperationFailedException ex)
                 {
-                    ex.printStackTrace();
-                }
-            }
+                    String errorMessage = null;
+                    if(ex.getErrorCode()
+                        == OperationFailedException.IDENTIFICATION_CONFLICT)
+                    {
+                        errorMessage = GuiActivator.getResources()
+                            .getI18NString(
+                                "service.gui.CHANGE_NICKNAME_CONFLICT_ERROR");
+                    }
+                    else
+                    {
+                        errorMessage = ex.getLocalizedMessage();
+                    }
+
+                    chatPanel.addErrorMessage(
+                        nickname,
+                        GuiActivator.getResources().getI18NString(
+                            "service.gui.CHANGE_NICKNAME_ERROR"),
+                        errorMessage);
+               }
+           }
         }
         else if (menuItemName.equals("grantVoiceItem"))
         {

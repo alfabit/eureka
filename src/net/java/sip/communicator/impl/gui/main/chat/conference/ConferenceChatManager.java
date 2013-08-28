@@ -13,7 +13,7 @@ import net.java.sip.communicator.impl.gui.*;
 import net.java.sip.communicator.impl.gui.main.chat.*;
 import net.java.sip.communicator.impl.gui.main.chat.history.*;
 import net.java.sip.communicator.impl.gui.main.chatroomslist.*;
-import net.java.sip.communicator.impl.gui.main.chatroomslist.joinforms.*;
+import net.java.sip.communicator.impl.gui.utils.*;
 import net.java.sip.communicator.plugin.desktoputil.*;
 import net.java.sip.communicator.service.gui.*;
 import net.java.sip.communicator.service.protocol.*;
@@ -24,6 +24,8 @@ import net.java.sip.communicator.util.*;
 import org.jitsi.service.resources.*;
 import org.jdesktop.swingworker.SwingWorker;
 import org.osgi.framework.*;
+
+import javax.swing.*;
 // Java 1.6 has javax.swing.SwingWorker so we have to disambiguate.
 
 /**
@@ -177,10 +179,13 @@ public class ConferenceChatManager
 
             chatPanel.addMessage(
                 sourceChatRoom.getUserNickname(),
+                null,
                 evt.getTimestamp(),
                 messageType,
                 msg.getContent(),
-                msg.getContentType());
+                msg.getContentType(),
+                msg.getMessageUID(),
+                null);
         }
     }
 
@@ -260,7 +265,8 @@ public class ConferenceChatManager
                     {
                         ChatRoomMessageDeliveredEvent ev =
                             (ChatRoomMessageDeliveredEvent) o;
-                        if (evt.getTimestamp() == ev.getTimestamp())
+                        if (evt.getTimestamp() != null
+                            && evt.getTimestamp().equals(ev.getTimestamp()))
                         {
                             isPresent = true;
                             break;
@@ -270,7 +276,8 @@ public class ConferenceChatManager
                     {
                         ChatRoomMessageReceivedEvent ev =
                             (ChatRoomMessageReceivedEvent) o;
-                        if (evt.getTimestamp() == ev.getTimestamp())
+                        if (evt.getTimestamp() != null
+                            && evt.getTimestamp().equals(ev.getTimestamp()))
                         {
                             isPresent = true;
                             break;
@@ -285,10 +292,13 @@ public class ConferenceChatManager
 
         chatPanel.addMessage(
             sourceMember.getName(),
+            null,
             evt.getTimestamp(),
             messageType,
             messageContent,
-            message.getContentType());
+            message.getContentType(),
+            message.getMessageUID(),
+            null);
 
         chatWindowManager.openChat(chatPanel, false);
     }
@@ -490,8 +500,21 @@ public class ConferenceChatManager
      * notified us
      */
     public void localUserPresenceChanged(
-        LocalUserChatRoomPresenceChangeEvent evt)
+        final LocalUserChatRoomPresenceChangeEvent evt)
     {
+        if(!SwingUtilities.isEventDispatchThread())
+        {
+            SwingUtilities.invokeLater(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    localUserPresenceChanged(evt);
+                }
+            });
+            return;
+        }
+
         ChatRoom sourceChatRoom = evt.getChatRoom();
         ChatRoomWrapper chatRoomWrapper
             = chatRoomList.findChatRoomWrapperFromChatRoom(sourceChatRoom);
@@ -511,6 +534,9 @@ public class ConferenceChatManager
                     = GuiActivator.getUIService().getChatWindowManager();
                 ChatPanel chatPanel
                     = chatWindowManager.getMultiChat(chatRoomWrapper, true);
+
+                chatPanel.setChatIcon(
+                    chatPanel.getChatSession().getChatStatusIcon());
 
                 // Check if we have already opened a chat window for this chat
                 // wrapper and load the real chat room corresponding to the
@@ -551,13 +577,17 @@ public class ConferenceChatManager
                     || LocalUserChatRoomPresenceChangeEvent
                             .LOCAL_USER_DROPPED.equals(eventType))
         {
-            this.closeChatRoom(chatRoomWrapper);
+            if(chatRoomWrapper != null)
+            {
+                this.closeChatRoom(chatRoomWrapper);
 
-            // Need to refresh the chat room's list in order to change
-            // the state of the chat room to offline.
-            fireChatRoomListChangedEvent(
-                chatRoomWrapper,
-                ChatRoomListChangeEvent.CHAT_ROOM_CHANGED);
+                // Need to refresh the chat room's list in order to change
+                // the state of the chat room to offline.
+
+                fireChatRoomListChangedEvent(
+                    chatRoomWrapper,
+                    ChatRoomListChangeEvent.CHAT_ROOM_CHANGED);
+            }
 
             sourceChatRoom.removeMessageListener(this);
         }
@@ -636,6 +666,60 @@ public class ConferenceChatManager
      * @param chatRoomWrapper the chat room to join.
      * @param nickName the nickname we choose for the given chat room.
      * @param password the password.
+     * @param rememberPassword if true the password should be saved.
+     */
+    public void joinChatRoom(   ChatRoomWrapper chatRoomWrapper,
+                                String nickName,
+                                byte[] password, 
+                                boolean rememberPassword)
+    {
+        this.joinChatRoom(
+                chatRoomWrapper, nickName, password, rememberPassword, true);
+    }
+
+    /**
+     * Joins the given chat room with the given password and manages all the
+     * exceptions that could occur during the join process.
+     *
+     * @param chatRoomWrapper the chat room to join.
+     * @param nickName the nickname we choose for the given chat room.
+     * @param password the password.
+     * @param rememberPassword if true the password should be saved.
+     * @param isFirstAttempt is this the first attempt to join room, used
+     *                       to check whether to show some error messages
+     */
+    public void joinChatRoom(   ChatRoomWrapper chatRoomWrapper,
+                                String nickName,
+                                byte[] password,
+                                boolean rememberPassword,
+                                boolean isFirstAttempt)
+    {
+        ChatRoom chatRoom = chatRoomWrapper.getChatRoom();
+
+        if(chatRoom == null)
+        {
+            new ErrorDialog(
+               GuiActivator.getUIService().getMainFrame(),
+               GuiActivator.getResources().getI18NString("service.gui.WARNING"),
+               GuiActivator.getResources().getI18NString(
+                    "service.gui.CHAT_ROOM_NOT_CONNECTED",
+                    new String[]{chatRoomWrapper.getChatRoomName()}))
+                    .showDialog();
+
+            return;
+        }
+
+        new JoinChatRoomTask(chatRoomWrapper, nickName, password,
+            rememberPassword, isFirstAttempt).execute();
+    }
+
+    /**
+     * Joins the given chat room with the given password and manages all the
+     * exceptions that could occur during the join process.
+     *
+     * @param chatRoomWrapper the chat room to join.
+     * @param nickName the nickname we choose for the given chat room.
+     * @param password the password.
      */
     public void joinChatRoom(   ChatRoomWrapper chatRoomWrapper,
                                 String nickName,
@@ -667,14 +751,17 @@ public class ConferenceChatManager
      * @param protocolProvider the parent protocol provider.
      * @param contacts the contacts invited when creating the chat room.
      * @param reason
+     * @param persistent is the room persistent
      * @return the <tt>ChatRoomWrapper</tt> corresponding to the created room
      */
     public ChatRoomWrapper createChatRoom(
         ProtocolProviderService protocolProvider,
         Collection<String> contacts,
-        String reason)
+        String reason,
+        boolean persistent)
     {
-        return this.createChatRoom(null, protocolProvider, contacts, reason);
+        return this.createChatRoom(
+            null, protocolProvider, contacts, reason, persistent, false);
     }
 
     /**
@@ -686,16 +773,45 @@ public class ConferenceChatManager
      * @param protocolProvider the parent protocol provider.
      * @param contacts the contacts invited when creating the chat room.
      * @param reason
+     * @param persistent is the room persistent
+     * @param isPrivate whether the room will be private or public.
      * @return the <tt>ChatRoomWrapper</tt> corresponding to the created room
      */
     public ChatRoomWrapper createChatRoom(
         String roomName,
         ProtocolProviderService protocolProvider,
         Collection<String> contacts,
-        String reason)
+        String reason,
+        boolean persistent,
+        boolean isPrivate)
     {
         return createChatRoom(
-            roomName, protocolProvider, contacts, reason, true, true);
+            roomName, protocolProvider, contacts, reason, true, persistent,
+            isPrivate);
+    }
+    
+    /**
+     * Creates a chat room, by specifying the chat room name, the parent
+     * protocol provider and eventually, the contacts invited to participate in
+     * this chat room.
+     *
+     * @param roomName the name of the room
+     * @param protocolProvider the parent protocol provider.
+     * @param contacts the contacts invited when creating the chat room.
+     * @param reason
+     * @param persistent is the room persistent
+     * @return the <tt>ChatRoomWrapper</tt> corresponding to the created room
+     */
+    public ChatRoomWrapper createChatRoom(
+        String roomName,
+        ProtocolProviderService protocolProvider,
+        Collection<String> contacts,
+        String reason,
+        boolean persistent)
+    {
+        return createChatRoom(
+            roomName, protocolProvider, contacts, reason, true, persistent,
+            false);
     }
 
     /**
@@ -709,6 +825,7 @@ public class ConferenceChatManager
      * @param reason
      * @param join whether we should join the room after creating it.
      * @param persistent whether the newly created room will be persistent.
+     * @param isPrivate whether the room will be private or public.
      * @return the <tt>ChatRoomWrapper</tt> corresponding to the created room
      */
     public ChatRoomWrapper createChatRoom(
@@ -717,7 +834,8 @@ public class ConferenceChatManager
         Collection<String> contacts,
         String reason,
         boolean join,
-        boolean persistent)
+        boolean persistent,
+        boolean isPrivate)
     {
         ChatRoomWrapper chatRoomWrapper = null;
 
@@ -731,7 +849,10 @@ public class ConferenceChatManager
         ChatRoom chatRoom = null;
         try
         {
-            chatRoom = groupChatOpSet.createChatRoom(roomName, null);
+            HashMap<String, Object> roomProperties = 
+                new HashMap<String, Object>();
+            roomProperties.put("isPrivate", isPrivate);
+            chatRoom = groupChatOpSet.createChatRoom(roomName, roomProperties);
 
             if(join)
             {
@@ -791,6 +912,27 @@ public class ConferenceChatManager
         }
 
         return chatRoomWrapper;
+    }
+
+    /**
+     * Creates a private chat room, by specifying the parent
+     * protocol provider and eventually, the contacts invited to participate in
+     * this chat room.
+     *
+     * @param protocolProvider the parent protocol provider.
+     * @param contacts the contacts invited when creating the chat room.
+     * @param reason
+     * @param persistent is the room persistent
+     * @return the <tt>ChatRoomWrapper</tt> corresponding to the created room
+     */
+    public ChatRoomWrapper createPrivateChatRoom(
+        ProtocolProviderService protocolProvider,
+        Collection<String> contacts,
+        String reason,
+        boolean persistent)
+    {
+        return this.createChatRoom(
+            null, protocolProvider, contacts, reason, persistent, true);
     }
 
     /**
@@ -1347,7 +1489,7 @@ public class ConferenceChatManager
      * @param chatRoomWrapper the chat room wrapper for which we search a chat
      * to close.
      */
-    private void closeChatRoom(ChatRoomWrapper chatRoomWrapper)
+    public void closeChatRoom(ChatRoomWrapper chatRoomWrapper)
     {
         ChatWindowManager chatWindowManager
             = GuiActivator.getUIService().getChatWindowManager();
@@ -1461,14 +1603,45 @@ public class ConferenceChatManager
         private final String nickName;
 
         private final byte[] password;
+        
+        private final boolean rememberPassword;
+
+        private final boolean isFirstAttempt;
 
         JoinChatRoomTask(   ChatRoomWrapper chatRoomWrapper,
                             String nickName,
-                            byte[] password)
+                            byte[] password,
+                            boolean rememberPassword,
+                            boolean isFirstAttempt)
         {
             this.chatRoomWrapper = chatRoomWrapper;
             this.nickName = nickName;
-            this.password = password;
+            this.isFirstAttempt = isFirstAttempt;
+
+            if(password == null)
+            {
+                String passString = chatRoomWrapper.loadPassword();
+                if(passString != null)
+                {
+                    this.password = passString.getBytes();
+                }
+                else
+                {
+                    this.password = null;
+                }
+            }
+            else
+            {
+                this.password = password;
+            }
+            this.rememberPassword = rememberPassword;
+        }
+        
+        JoinChatRoomTask(   ChatRoomWrapper chatRoomWrapper,
+            String nickName,
+            byte[] password)
+        {
+            this(chatRoomWrapper, nickName, password, false, true);
         }
 
         /**
@@ -1539,10 +1712,48 @@ public class ConferenceChatManager
             String errorMessage = null;
             if(AUTHENTICATION_FAILED.equals(returnCode))
             {
-                ChatRoomAuthenticationWindow authWindow
-                    = new ChatRoomAuthenticationWindow(chatRoomWrapper);
+                chatRoomWrapper.removePassword();
+
+                AuthenticationWindowService authWindowsService
+                    = ServiceUtils.getService(
+                        GuiActivator.bundleContext,
+                        AuthenticationWindowService.class);
+
+                AuthenticationWindowService.AuthenticationWindow authWindow =
+                    authWindowsService.create(
+                        null, null, null, false,
+                        chatRoomWrapper.isPersistent(),
+                        ImageLoader.getAuthenticationWindowIcon(
+                            chatRoomWrapper.getParentProvider()
+                                .getProtocolProvider()),
+                        GuiActivator.getResources().getI18NString(
+                            "service.gui.AUTHENTICATION_WINDOW_TITLE",
+                            new String[]{chatRoomWrapper.getParentProvider()
+                                            .getName()}),
+                        GuiActivator.getResources().getI18NString(
+                                "service.gui.CHAT_ROOM_REQUIRES_PASSWORD",
+                                new String[]{
+                                        chatRoomWrapper.getChatRoomName()}),
+                        "", null,
+                        isFirstAttempt ?
+                            null :
+                            GuiActivator.getResources().getI18NString(
+                                "service.gui.AUTHENTICATION_FAILED",
+                                new String[]{chatRoomWrapper.getChatRoomName()}),
+                        null);
 
                 authWindow.setVisible(true);
+
+                if (!authWindow.isCanceled())
+                {
+                    GuiActivator.getUIService().getConferenceChatManager()
+                        .joinChatRoom(
+                            chatRoomWrapper,
+                            nickName,
+                            new String(authWindow.getPassword()).getBytes(),
+                            authWindow.isRememberPassword(),
+                            false);
+                }
             }
             else if(REGISTRATION_REQUIRED.equals(returnCode))
             {
@@ -1574,13 +1785,18 @@ public class ConferenceChatManager
                             new String[]{chatRoomWrapper.getChatRoomName()});
             }
 
-            if (!SUCCESS.equals(returnCode)
-                    && !AUTHENTICATION_FAILED.equals(returnCode))
+            if (!SUCCESS.equals(returnCode) && 
+                !AUTHENTICATION_FAILED.equals(returnCode))
             {
                 new ErrorDialog(
                     GuiActivator.getUIService().getMainFrame(),
                     GuiActivator.getResources().getI18NString(
                             "service.gui.ERROR"), errorMessage).showDialog();
+            }
+
+            if (SUCCESS.equals(returnCode) && rememberPassword)
+            {
+                chatRoomWrapper.savePassword(new String(password));
             }
         }
     }
@@ -1874,10 +2090,13 @@ public class ConferenceChatManager
                 .addMessage(
                     sourceChatRoom
                         .getParentProvider().getAccountID().getUserID(),
+                    null,
                     evt.getTimestamp(),
                     messageType,
                     msg.getContent(),
-                    msg.getContentType());
+                    msg.getContentType(),
+                    msg.getMessageUID(),
+                    null);
         }
         else
         {
@@ -1996,10 +2215,13 @@ public class ConferenceChatManager
 
         chatPanel.addMessage(
             sourceParticipant.getDisplayName(),
+            null,
             evt.getTimestamp(),
             messageType,
             messageContent,
-            message.getContentType());
+            message.getContentType(),
+            message.getMessageUID(),
+            null);
 
         chatWindowManager.openChat(chatPanel, false);
     }

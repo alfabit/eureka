@@ -471,8 +471,8 @@ public class ProtocolProviderServiceJabberImpl
                 inConnectAndLogin = true;
             }
 
-            connectAndLogin(authority,
-                            SecurityAuthority.AUTHENTICATION_REQUIRED);
+            initializeConnectAndLogin(authority,
+                SecurityAuthority.AUTHENTICATION_REQUIRED);
         }
         catch (XMPPException ex)
         {
@@ -528,7 +528,7 @@ public class ProtocolProviderServiceJabberImpl
             if (logger.isTraceEnabled())
                 logger.trace("Trying to reregister us!");
 
-            // sets this if any is tring to use us through registration
+            // sets this if any is trying to use us through registration
             // to know we are not registered
             this.unregister(false);
 
@@ -541,8 +541,7 @@ public class ProtocolProviderServiceJabberImpl
                 inConnectAndLogin = true;
             }
 
-            connectAndLogin(authority,
-                            authReasonCode);
+            initializeConnectAndLogin(authority, authReasonCode);
         }
         catch(OperationFailedException ex)
         {
@@ -639,7 +638,7 @@ public class ProtocolProviderServiceJabberImpl
      * @throws  OperationFailedException if login parameters
      *          as server port are not correct
      */
-    private void connectAndLogin(SecurityAuthority authority,
+    private void initializeConnectAndLogin(SecurityAuthority authority,
                                               int reasonCode)
         throws XMPPException, OperationFailedException
     {
@@ -737,6 +736,8 @@ public class ProtocolProviderServiceJabberImpl
             if (addrs == null || addrs.length == 0)
             {
                 logger.error("No server addresses found");
+
+                eventDuringLogin = null;
 
                 fireRegistrationStateChanged(
                     getRegistrationState(),
@@ -951,9 +952,19 @@ public class ProtocolProviderServiceJabberImpl
                 //as we got an exception not handled in connectAndLogin
                 //no state was set, so fire it here so we can continue
                 //with the re-register process
-                fireRegistrationStateChanged(getRegistrationState(),
+                //2013-08-07 do not fire event, if we have several
+                // addresses and we fire event will activate reconnect
+                // but we will continue connecting with other addresses
+                // and can register with address, then unregister and try again
+                // that is from reconnect plugin.
+                // Storing event for fire after all have failed and we have
+                // tried every address.
+                eventDuringLogin = new RegistrationStateChangeEvent(
+                    ProtocolProviderServiceJabberImpl.this,
+                    getRegistrationState(),
                     RegistrationState.CONNECTION_FAILED,
-                    RegistrationStateChangeEvent.REASON_SERVER_NOT_FOUND, null);
+                    RegistrationStateChangeEvent.REASON_SERVER_NOT_FOUND,
+                    null);
 
                 throw ex;
             }
@@ -1185,6 +1196,8 @@ public class ProtocolProviderServiceJabberImpl
 
             logger.error("Connection not established, server not found!");
 
+            eventDuringLogin = null;
+
             fireRegistrationStateChanged(getRegistrationState(),
                 RegistrationState.CONNECTION_FAILED,
                 RegistrationStateChangeEvent.REASON_SERVER_NOT_FOUND, null);
@@ -1213,6 +1226,7 @@ public class ProtocolProviderServiceJabberImpl
         if (!loginStrategy.login(connection, userName, resource))
         {
             disconnectAndCleanConnection();
+            eventDuringLogin = null;
             fireRegistrationStateChanged(
                 getRegistrationState(),
                 // not auth failed, or there would be no info-popup
@@ -1225,6 +1239,8 @@ public class ProtocolProviderServiceJabberImpl
 
         if(connection.isAuthenticated())
         {
+            eventDuringLogin = null;
+
             fireRegistrationStateChanged(
                 getRegistrationState(),
                 RegistrationState.REGISTERED,
@@ -1254,6 +1270,8 @@ public class ProtocolProviderServiceJabberImpl
         else
         {
             disconnectAndCleanConnection();
+
+            eventDuringLogin = null;
 
             fireRegistrationStateChanged(
                 getRegistrationState()
@@ -1339,7 +1357,7 @@ public class ProtocolProviderServiceJabberImpl
 
         /*
          * Expose the discoveryManager as service-public through the
-         * OperationSetContactCapabilities of this ProtocolProviderSerivce.
+         * OperationSetContactCapabilities of this ProtocolProviderService.
          */
         if (opsetContactCapabilities != null)
             opsetContactCapabilities.setDiscoveryManager(discoveryManager);
@@ -1419,12 +1437,23 @@ public class ProtocolProviderServiceJabberImpl
     {
         synchronized(initializationLock)
         {
+            if(fireEvent)
+            {
+                eventDuringLogin = null;
+                fireRegistrationStateChanged(
+                    getRegistrationState()
+                    , RegistrationState.UNREGISTERING
+                    , RegistrationStateChangeEvent.REASON_NOT_SPECIFIED
+                    , null);
+            }
+
             disconnectAndCleanConnection();
 
             RegistrationState currRegState = getRegistrationState();
 
             if(fireEvent)
             {
+                eventDuringLogin = null;
                 fireRegistrationStateChanged(
                     currRegState,
                     RegistrationState.UNREGISTERED,
@@ -1674,6 +1703,11 @@ public class ProtocolProviderServiceJabberImpl
                     new DefaultPacketExtensionProvider<
                                 ParameterPacketExtension>(
                             ParameterPacketExtension.class));
+
+            providerManager.addExtensionProvider(
+                    ConferenceDescriptionPacketExtension.ELEMENT_NAME,
+                    ConferenceDescriptionPacketExtension.NAMESPACE,
+                    new ConferenceDescriptionPacketExtension.Provider());
 
             //initialize the telephony operation set
             boolean isCallingDisabled
@@ -1933,11 +1967,12 @@ public class ProtocolProviderServiceJabberImpl
         // we try determine the reason according to their message
         // all messages that were found in smack 3.1.0 were took in count
         return
-            (exMsg.indexOf("authentication failed") != -1)
-                || ((exMsg.indexOf("authentication") != -1)
-                        && (exMsg.indexOf("failed") != -1))
-                || (exMsg.indexOf("login failed") != -1)
-                || (exMsg.indexOf("unable to determine password") != -1);
+            ((exMsg.indexOf("sasl authentication") != -1)
+                    && (exMsg.indexOf("failed") != -1))
+            || (exMsg.indexOf(
+                    "does not support compatible authentication mechanism")
+                        != -1)
+            || (exMsg.indexOf("unable to determine password") != -1);
     }
 
     /**

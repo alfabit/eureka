@@ -16,6 +16,7 @@ import java.util.List;
 
 import javax.swing.*;
 import javax.swing.event.*;
+import javax.swing.plaf.basic.*;
 import javax.swing.text.*;
 
 import net.java.sip.communicator.impl.gui.*;
@@ -23,6 +24,7 @@ import net.java.sip.communicator.impl.gui.main.chat.conference.*;
 import net.java.sip.communicator.impl.gui.main.chat.filetransfer.*;
 import net.java.sip.communicator.impl.gui.utils.*;
 import net.java.sip.communicator.plugin.desktoputil.*;
+import net.java.sip.communicator.plugin.desktoputil.SwingWorker;
 import net.java.sip.communicator.service.contactlist.*;
 import net.java.sip.communicator.service.filehistory.*;
 import net.java.sip.communicator.service.gui.*;
@@ -33,7 +35,6 @@ import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.util.*;
 import net.java.sip.communicator.util.Logger;
 import net.java.sip.communicator.util.skin.*;
-import net.java.sip.communicator.plugin.desktoputil.SwingWorker;
 
 import org.jitsi.util.*;
 
@@ -76,6 +77,13 @@ public class ChatPanel
     private final JPanel topPanel = new JPanel(new BorderLayout());
 
     private final ChatConversationPanel conversationPanel;
+
+    /**
+     * Will contain the typing panel on south and centered the
+     * conversation panel.
+     */
+    private final JPanel conversationPanelContainer
+        = new JPanel(new BorderLayout());
 
     private final ChatWritePanel writeMessagePanel;
 
@@ -165,10 +173,14 @@ public class ChatPanel
         this.conversationPanel.getChatTextPane()
             .setTransferHandler(new ChatTransferHandler(this));
 
+        this.conversationPanelContainer.add(
+            conversationPanel, BorderLayout.CENTER);
+        this.conversationPanelContainer.setBackground(Color.WHITE);
+        initTypingNotificationLabel(conversationPanelContainer);
+
         topPanel.setBackground(Color.WHITE);
         topPanel.setBorder(
             BorderFactory.createMatteBorder(1, 0, 1, 0, Color.GRAY));
-        initTypingNotificationLabel();
 
         this.writeMessagePanel = new ChatWritePanel(this);
 
@@ -207,10 +219,10 @@ public class ChatPanel
         if ((this.chatSession != null)
                 && this.chatSession.isContactListSupported())
         {
-            topPanel.remove(conversationPanel);
+            topPanel.remove(conversationPanelContainer);
 
             TransparentPanel rightPanel
-                = new TransparentPanel(new BorderLayout(5, 5));
+                = new TransparentPanel(new BorderLayout());
             Dimension chatContactPanelSize = new Dimension(150, 100);
             rightPanel.setMinimumSize(chatContactPanelSize);
             rightPanel.setPreferredSize(chatContactPanelSize);
@@ -224,19 +236,39 @@ public class ChatPanel
             topSplitPane.setOpaque(false);
             topSplitPane.setResizeWeight(1.0D);
 
+            Color msgNameBackground =
+                Color.decode(ChatHtmlUtils.MSG_NAME_BACKGROUND);
+
+            // add border to the divider
+            if(topSplitPane.getUI() instanceof BasicSplitPaneUI)
+            {
+                ((BasicSplitPaneUI)topSplitPane.getUI()).getDivider()
+                    .setBorder(
+                        BorderFactory.createLineBorder(msgNameBackground));
+            }
+
             ChatTransport chatTransport = chatSession.getCurrentChatTransport();
 
+            JPanel localUserLabelPanel = new JPanel(new BorderLayout());
             JLabel localUserLabel = new JLabel(
                 chatTransport.getProtocolProvider()
                     .getAccountID().getDisplayName());
 
             localUserLabel.setFont(
                 localUserLabel.getFont().deriveFont(Font.BOLD));
+            localUserLabel.setHorizontalAlignment(SwingConstants.CENTER);
+            localUserLabel.setBorder(
+                            BorderFactory.createEmptyBorder(2, 0, 3, 0));
+            localUserLabel.setForeground(
+                Color.decode(ChatHtmlUtils.MSG_IN_NAME_FOREGROUND));
 
-            rightPanel.add(localUserLabel, BorderLayout.NORTH);
+            localUserLabelPanel.add(localUserLabel, BorderLayout.CENTER);
+            localUserLabelPanel.setBackground(msgNameBackground);
+
+            rightPanel.add(localUserLabelPanel, BorderLayout.NORTH);
             rightPanel.add(chatContactListPanel, BorderLayout.CENTER);
 
-            topSplitPane.setLeftComponent(conversationPanel);
+            topSplitPane.setLeftComponent(conversationPanelContainer);
             topSplitPane.setRightComponent(rightPanel);
 
             topPanel.add(topSplitPane);
@@ -255,7 +287,7 @@ public class ChatPanel
                 topSplitPane = null;
             }
 
-            topPanel.add(conversationPanel);
+            topPanel.add(conversationPanelContainer);
         }
 
         if (chatSession instanceof MetaContactChatSession)
@@ -304,6 +336,9 @@ public class ChatPanel
             // The subject panel is added here, because it's specific for the
             // multi user chat and is not contained in the single chat chat panel.
             this.add(subjectPanel, BorderLayout.NORTH);
+
+            this.revalidate();
+            this.repaint();
         }
 
         if (chatContactListPanel != null)
@@ -434,8 +469,10 @@ public class ChatPanel
 
     /**
      * Initializes the typing notification label.
+     * @param typingLabelParent the parent container
+     *                          of typing notification label.
      */
-    private void initTypingNotificationLabel()
+    private void initTypingNotificationLabel(JPanel typingLabelParent)
     {
         typingNotificationLabel
             = new JLabel(" ", SwingConstants.CENTER);
@@ -447,7 +484,7 @@ public class ChatPanel
         typingNotificationLabel.setVerticalTextPosition(JLabel.BOTTOM);
         typingNotificationLabel.setHorizontalTextPosition(JLabel.LEFT);
         typingNotificationLabel.setIconTextGap(0);
-        topPanel.add(typingNotificationLabel, BorderLayout.SOUTH);
+        typingLabelParent.add(typingNotificationLabel, BorderLayout.SOUTH);
     }
 
     /**
@@ -700,7 +737,8 @@ public class ChatPanel
                             evt.getTimestamp(),
                             Chat.HISTORY_OUTGOING_MESSAGE,
                             evt.getMessage().getContent(),
-                            evt.getMessage().getContentType());
+                            evt.getMessage().getContentType(),
+                            evt.getMessage().getMessageUID());
             }
             else if(o instanceof ChatRoomMessageReceivedEvent)
             {
@@ -716,7 +754,8 @@ public class ChatPanel
                             evt.getTimestamp(),
                             Chat.HISTORY_INCOMING_MESSAGE,
                             evt.getMessage().getContent(),
-                            evt.getMessage().getContentType());
+                            evt.getMessage().getContentType(),
+                            evt.getMessage().getMessageUID());
                 }
             }
             else if (o instanceof FileRecord)
@@ -1272,9 +1311,7 @@ public class ChatPanel
     private boolean isGreyHistoryStyleDisabled(
         ProtocolProviderService protocolProvider)
     {
-        boolean isProtocolHidden =
-            protocolProvider.getAccountID().getAccountPropertyBoolean(
-                ProtocolProviderFactory.IS_PROTOCOL_HIDDEN, false);
+        boolean isProtocolHidden = protocolProvider.getAccountID().isHidden();
         boolean isGreyHistoryDisabled = false;
 
         String greyHistoryProperty
@@ -2439,10 +2476,11 @@ public class ChatPanel
                     getOperationSet(OperationSetMultiUserChat.class) != null)
             {
                 ChatRoomWrapper chatRoomWrapper
-                    = conferenceChatManager.createChatRoom(
+                    = conferenceChatManager.createPrivateChatRoom(
                         inviteChatTransport.getProtocolProvider(),
                         chatContacts,
-                        reason);
+                        reason,
+                        false);
 
                 conferenceChatSession
                     = new ConferenceChatSession(this, chatRoomWrapper);

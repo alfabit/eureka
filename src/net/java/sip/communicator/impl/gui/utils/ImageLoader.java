@@ -329,6 +329,24 @@ public class ImageLoader
         = new ImageID("service.gui.buttons.ADD_CONTACT_BUTTON_SMALL_PRESSED");
 
     /**
+     * The web button image.
+     */
+    public static final ImageID WEB_BUTTON
+        = new ImageID("service.gui.buttons.WEB_BUTTON");
+
+    /**
+     * The call web pressed image.
+     */
+    public static final ImageID WEB_BUTTON_ROLLOVER
+        = new ImageID("service.gui.buttons.WEB_BUTTON_ROLLOVER");
+
+    /**
+     * The web button pressed image.
+     */
+    public static final ImageID WEB_BUTTON_PRESSED
+        = new ImageID("service.gui.buttons.WEB_BUTTON_PRESSED");
+
+    /**
      * The chat button small image.
      */
     public static final ImageID CHAT_BUTTON_SMALL
@@ -919,6 +937,12 @@ public class ImageLoader
      */
     public static final ImageID CHAT_ROOM_16x16_ICON
         = new ImageID("service.gui.icons.CHAT_ROOM_16x16_ICON");
+    
+    /**
+     * The image used for joined chat rooms.
+     */
+    public static final ImageID CHAT_ROOM_JOINED_ICON
+        = new ImageID("service.gui.icons.CHAT_ROOM_JOINED_ICON");
 
     /**
      * The image used for multi user chat servers.
@@ -1217,12 +1241,6 @@ public class ImageLoader
             "service.gui.icons.TOOLBAR_DRAG_ICON");
 
     /**
-     * The background image of the <tt>AuthenticationWindow</tt>.
-     */
-    public static final ImageID AUTH_WINDOW_BACKGROUND = new ImageID(
-            "service.gui.AUTH_WINDOW_BACKGROUND");
-
-    /**
      * The icon used to indicate a search.
      */
     public static final ImageID SEARCH_ICON
@@ -1323,6 +1341,12 @@ public class ImageLoader
      */
     public static final ImageID CHANGE_NICKNAME_ICON_16x16
         = new ImageID("service.gui.icons.CHANGE_NICKNAME_16x16");
+
+    /**
+     * Change nickname icon
+     */
+    public static final ImageID CHANGE_NICKNAME_ICON
+        = new ImageID("service.gui.icons.CHANGE_NICKNAME");
 
     /**
      * Ban icon.

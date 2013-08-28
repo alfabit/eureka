@@ -144,11 +144,21 @@ public abstract class MediaAwareCallPeer
     private ConferenceInfoDocument lastConferenceInfoReceived = null;
 
     /**
+     * Whether a conference-info document has been scheduled to be sent to this
+     * <tt>CallPeer</tt>
+     */
+    private boolean confInfoScheduled = false;
+
+    /**
+     * Synchronization object for confInfoScheduled
+     */
+    private final Object confInfoScheduledSyncRoot = new Object();
+
+    /**
      * Creates a new call peer with address <tt>peerAddress</tt>.
      *
      * @param owningCall the call that contains this call peer.
      */
-
     public MediaAwareCallPeer(T owningCall)
     {
         this.call = owningCall;
@@ -471,6 +481,14 @@ public abstract class MediaAwareCallPeer
             mediaHandler.setCsrcAudioLevelListener(this);
         }
     }
+    
+    /**
+     * Dummy implementation of {@link CallPeerConferenceListener
+     * #conferenceMemberErrorReceived(CallPeerConferenceEvent)}.
+     *
+     * @param ev the event
+     */
+    public void conferenceMemberErrorReceived(CallPeerConferenceEvent ev) {};
 
     /**
      * Called when this peer stops being a mixer. The method add removes this
@@ -1119,4 +1137,78 @@ public abstract class MediaAwareCallPeer
      * element corresponding to this <tt>CallPeer</tt>)
      */
     public abstract String getEntity();
+
+    /**
+     * Check whether a conference-info document is scheduled to be sent to
+     * this <tt>CallPeer</tt> (i.e. there is a thread which will eventually
+     * (after sleeping a certain amount of time) trigger a document to be sent)
+     * @return <tt>true</tt> if there is a conference-info document  scheduled
+     * to be sent to this <tt>CallPeer</tt> and <tt>false</tt> otherwise.
+     */
+    public boolean isConfInfoScheduled()
+    {
+        synchronized (confInfoScheduledSyncRoot)
+        {
+            return confInfoScheduled;
+        }
+    }
+
+    /**
+     * Sets the property which indicates whether a conference-info document
+     * is scheduled to be sent to this <tt>CallPeer</tt>.
+     * @param confInfoScheduled
+     */
+    public void setConfInfoScheduled(boolean confInfoScheduled)
+    {
+        synchronized (confInfoScheduledSyncRoot)
+        {
+            this.confInfoScheduled = confInfoScheduled;
+        }
+    }
+
+    /**
+     * Returns the direction of the session for media of type <tt>mediaType</tt>
+     * that we have with this <tt>CallPeer</tt>. This is the direction of the
+     * session negotiated in the signaling protocol, and it may or may not
+     * coincide with the direction of the media stream.
+     * For example, if we are the focus of a videobridge conference and another
+     * peer is sending video to us, we have a <tt>RECVONLY</tt> video stream,
+     * but <tt>SENDONLY</tt> or <tt>SENDRECV</tt> (Jingle) sessions with the
+     * rest of the conference members.
+     * Should always return non-null.
+     *
+     * @param mediaType the <tt>MediaType</tt> to use
+     * @return Returns the direction of the session for media of type
+     * <tt>mediaType</tt> that we have with this <tt>CallPeer</tt>.
+     */
+    public abstract MediaDirection getDirection(MediaType mediaType);
+
+    /**
+     * {@inheritDoc}
+     *
+     * When a <tt>ConferenceMember</tt> is removed from a conference with a
+     * Jitsi-videobridge, an RTCP BYE packet is not always sent. Therefore,
+     * if the <tt>ConferenceMember</tt> had an associated video SSRC, the stream
+     * isn't be removed until it times out, leaving a blank video container in
+     * the interface for a few seconds.
+     * TODO: This works around the problem by removing the
+     * <tt>ConferenceMember</tt>'s <tt>ReceiveStream</tt> when the
+     * <tt>ConferenceMember</tt> is removed. The proper solution is to ensure
+     * that RTCP BYEs are sent whenever necessary, and when it is deployed this
+     * code should be removed.
+     *
+     * @param conferenceMember a <tt>ConferenceMember</tt> to be removed from
+     * the list of <tt>ConferenceMember</tt> reported by this peer. If the
+     * specified <tt>ConferenceMember</tt> is no contained in the list, no event
+     */
+    @Override
+    public void removeConferenceMember(ConferenceMember conferenceMember)
+    {
+        MediaStream videoStream = getMediaHandler().getStream(MediaType.VIDEO);
+        if (videoStream != null)
+            videoStream.removeReceiveStreamForSsrc(
+                    conferenceMember.getVideoSsrc());
+
+        super.removeConferenceMember(conferenceMember);
+    }
 }

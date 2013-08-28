@@ -15,7 +15,6 @@ import javax.swing.event.*;
 import javax.swing.table.*;
 
 import net.java.sip.communicator.impl.gui.*;
-import net.java.sip.communicator.impl.gui.customcontrols.*;
 import net.java.sip.communicator.impl.gui.main.chat.*;
 import net.java.sip.communicator.impl.gui.main.chat.conference.*;
 import net.java.sip.communicator.impl.gui.utils.*;
@@ -76,6 +75,7 @@ public class ChatRoomTableUI
 
         this.chatRoomList.setOpaque(false);
         this.chatRoomList.setModel(chatRoomsTableModel);
+        this.chatRoomList.setRowHeight(32);
 
         /*
          * XXX The ConferenceChatManager instance will surely outlive
@@ -177,27 +177,9 @@ public class ChatRoomTableUI
 
         if (savedNick == null)
         {
-            String nickName = null;
-            ChatOperationReasonDialog reasonDialog =
-                new ChatOperationReasonDialog(GuiActivator.getResources()
-                    .getI18NString("service.gui.CHANGE_NICKNAME"), GuiActivator
-                    .getResources().getI18NString(
-                        "service.gui.CHANGE_NICKNAME_LABEL"));
-
-            reasonDialog.setReasonFieldText(chatRoomWrapper.getChatRoom()
-                .getUserNickname());
-
-            int result = reasonDialog.showDialog();
-
-            if (result == MessageDialog.OK_RETURN_CODE)
-            {
-                nickName = reasonDialog.getReason().trim();
-
-                ConfigurationUtils.updateChatRoomProperty(chatRoomWrapper
-                    .getParentProvider().getProtocolProvider(), chatRoomWrapper
-                    .getChatRoomID(), "userNickName", nickName);
-
-            }
+            String nickName = chatRoomWrapper.getNickname();
+            if(nickName == null)
+                return;
 
             if (!chatRoomWrapper.getChatRoom().isJoined())
             {
@@ -325,14 +307,18 @@ public class ChatRoomTableUI
 
             this.setText(chatRoom.getChatRoomName());
 
-            Image chatRoomImage = ImageLoader
-                .getImage(ImageLoader.CHAT_ROOM_16x16_ICON);
+            Image chatRoomImage = null;
 
             if(chatRoom.getChatRoom() == null ||
                 !chatRoom.getChatRoom().isJoined())
             {
-                chatRoomImage
-                    = LightGrayFilter.createDisabledImage(chatRoomImage);
+                chatRoomImage = ImageLoader
+                    .getImage(ImageLoader.CHAT_ROOM_16x16_ICON);
+            }
+            else
+            {
+                chatRoomImage = ImageLoader
+                    .getImage(ImageLoader.CHAT_ROOM_JOINED_ICON);
             }
 
             this.setIcon(new ImageIcon(chatRoomImage));

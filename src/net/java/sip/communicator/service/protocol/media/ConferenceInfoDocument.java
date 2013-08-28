@@ -270,6 +270,31 @@ public class ConferenceInfoDocument
     }
 
     /**
+     * Creates a new <tt>ConferenceInfoDocument</tt> instance that represents
+     * a copy of <tt>confInfo</tt>
+     * @param confInfo the document to copy
+     * @throws XMLException if a document failed to be created.
+     */
+    public ConferenceInfoDocument(ConferenceInfoDocument confInfo)
+            throws XMLException
+    {
+        this();
+
+        //temporary
+        String sid = confInfo.getSid();
+        if(sid != null && !sid.equals(""))
+            setSid(sid);
+
+        setEntity(confInfo.getEntity());
+        setState(confInfo.getState());
+        setUserCount(confInfo.getUserCount());
+        setUsersState(confInfo.getUsersState());
+        setVersion(confInfo.getVersion());
+        for (User user : confInfo.getUsers())
+            addUser(user);
+    }
+
+    /**
      * Returns the value of the <tt>version</tt> attribute of the
      * <tt>conference-info</tt> element, or -1 if there is no <tt>version</tt>
      * attribute or if it's value couldn't be parsed as an integer.
@@ -331,6 +356,17 @@ public class ConferenceInfoDocument
     }
 
     /**
+     * Sets the <tt>state</tt> attribute of the <tt>users</tt> chuld of the
+     * <tt>conference-info</tt> element.
+     *
+     * @param state the state to set
+     */
+    public void setUsersState(State state)
+    {
+        setState(users, state);
+    }
+
+    /**
      * Sets the value of the <tt>state</tt> attribute of the
      * <tt>conference-info</tt> element.
      * @param state the value to set the <tt>state</tt> attribute of the
@@ -353,7 +389,25 @@ public class ConferenceInfoDocument
      */
     public void setSid(String sid)
     {
-        conferenceInfo.setAttribute("sid", sid);
+        if (sid == null || sid.equals(""))
+            conferenceInfo.removeAttribute("sid");
+        else
+            conferenceInfo.setAttribute("sid", sid);
+    }
+
+    /**
+     * Gets the value of the <tt>sid</tt> attribute of the
+     * <tt>conference-info</tt> element.
+     * This is not part of RFC4575 and is here because we are temporarily using
+     * it in our XMPP implementation.
+     * TODO: remote it when we define another way to handle the Jingle SID
+     *
+     * @param sid the value to set the <tt>sid</tt> attribute of the
+     * <tt>conference-info</tt> element to.
+     */
+    public String getSid()
+    {
+        return conferenceInfo.getAttribute("sid");
     }
 
     /**
@@ -364,7 +418,10 @@ public class ConferenceInfoDocument
      */
     public void setEntity(String entity)
     {
-        conferenceInfo.setAttribute(ENTITY_ATTR_NAME, entity);
+        if (entity == null || entity.equals(""))
+            conferenceInfo.removeAttribute(ENTITY_ATTR_NAME);
+        else
+            conferenceInfo.setAttribute(ENTITY_ATTR_NAME, entity);
     }
 
     /**
@@ -521,6 +578,19 @@ public class ConferenceInfoDocument
     }
 
     /**
+     * Adds a copy of <tt>user</tt> to this <tt>ConferenceInfoDocument</tt>
+     * @param user the <tt>User</tt> to add a copy of
+     */
+    public void addUser(User user)
+    {
+        User newUser = addNewUser(user.getEntity());
+        newUser.setDisplayText(user.getDisplayText());
+        newUser.setState(user.getState());
+        for (Endpoint endpoint : user.getEndpoints())
+            newUser.addEndpoint(endpoint);
+    }
+
+    /**
      * Removes a specific <tt>User</tt> (the one with entity <tt>entity</tt>)
      * from the document.
      * @param entity the entity of the <tt>User</tt> to remove.
@@ -572,7 +642,7 @@ public class ConferenceInfoDocument
     {
         if (element != null)
         {
-            if (state == State.FULL)
+            if (state == State.FULL || state == null)
                 element.removeAttribute(STATE_ATTR_NAME);
             else
                 element.setAttribute(STATE_ATTR_NAME, state.toString());
@@ -592,11 +662,9 @@ public class ConferenceInfoDocument
     {
         Element statusElement
                 = XMLUtils.findChild(element, STATUS_ELEMENT_NAME);
-        if (statusString == null)
+        if (statusString == null || statusString.equals(""))
         {
-            if(statusElement == null)
-                return;
-            else
+            if(statusElement != null)
                 element.removeChild(statusElement);
         }
         else
@@ -716,7 +784,10 @@ public class ConferenceInfoDocument
          */
         public void setEntity(String entity)
         {
-            userElement.setAttribute(ENTITY_ATTR_NAME, entity);
+            if (entity == null || entity.equals(""))
+                userElement.removeAttribute(ENTITY_ATTR_NAME);
+            else
+                userElement.setAttribute(ENTITY_ATTR_NAME, entity);
         }
 
         /**
@@ -763,9 +834,7 @@ public class ConferenceInfoDocument
                     = XMLUtils.findChild(userElement, DISPLAY_TEXT_ELEMENT_NAME);
             if (text == null || text.equals(""))
             {
-                if (displayText == null)
-                    return;
-                else
+                if (displayText != null)
                     userElement.removeChild(displayText);
             }
             else
@@ -851,6 +920,19 @@ public class ConferenceInfoDocument
         }
 
         /**
+         * Adds a copy of <tt>endpoint</tt> to this <tt>User</tt>
+         * @param endpoint the <tt>Endpoint</tt> to add a copy of
+         */
+        public void addEndpoint(Endpoint endpoint)
+        {
+            Endpoint newEndpoint = addNewEndpoint(endpoint.getEntity());
+            newEndpoint.setStatus(endpoint.getStatus());
+            newEndpoint.setState(endpoint.getState());
+            for (Media media : endpoint.getMedias())
+                newEndpoint.addMedia(media);
+        }
+
+        /**
          * Removes a specific <tt>Endpoint</tt> (the one with entity
          * <tt>entity</tt>) from this <tt>User</tt>.
          * @param entity the <tt>entity</tt> of the <tt>Endpoint</tt> to remove
@@ -907,7 +989,10 @@ public class ConferenceInfoDocument
          */
         public void setEntity(String entity)
         {
-            endpointElement.setAttribute(ENTITY_ATTR_NAME, entity);
+            if (entity == null || entity.equals(""))
+                endpointElement.removeAttribute(ENTITY_ATTR_NAME);
+            else
+                endpointElement.setAttribute(ENTITY_ATTR_NAME, entity);
         }
 
         /**
@@ -1025,6 +1110,18 @@ public class ConferenceInfoDocument
         }
 
         /**
+         * Adds a copy of <tt>media</tt> to this <tt>Endpoint</tt>
+         * @param media the <tt>Media</tt> to add a copy of
+         */
+        public void addMedia(Media media)
+        {
+            Media newMedia = addNewMedia(media.getId());
+            newMedia.setSrcId(media.getSrcId());
+            newMedia.setType(media.getType());
+            newMedia.setStatus(media.getStatus());
+        }
+
+        /**
          * Removes a specific <tt>Media</tt> (the one with id <tt>id</tt>) from
          * this <tt>Endpoint</tt>.
          * @param id the <tt>id</tt> of the <tt>Media</tt> to remove.
@@ -1068,7 +1165,10 @@ public class ConferenceInfoDocument
          */
         public void setId(String id)
         {
-            mediaElement.setAttribute(ID_ATTR_NAME, id);
+            if (id == null || id.equals(""))
+                mediaElement.removeAttribute(ID_ATTR_NAME);
+            else
+                mediaElement.setAttribute(ID_ATTR_NAME, id);
         }
 
         /**
@@ -1090,13 +1190,21 @@ public class ConferenceInfoDocument
         {
             Element srcIdElement
                     = XMLUtils.findChild(mediaElement, SRC_ID_ELEMENT_NAME);
-            if (srcIdElement == null)
+            if (srcId == null || srcId.equals(""))
             {
-                srcIdElement
-                        = document.createElement(SRC_ID_ELEMENT_NAME);
-                mediaElement.appendChild(srcIdElement);
+                if (srcIdElement != null)
+                    mediaElement.removeChild(srcIdElement);
             }
-            srcIdElement.setTextContent(srcId);
+            else
+            {
+                if (srcIdElement == null)
+                {
+                    srcIdElement
+                            = document.createElement(SRC_ID_ELEMENT_NAME);
+                    mediaElement.appendChild(srcIdElement);
+                }
+                srcIdElement.setTextContent(srcId);
+            }
         }
 
         /**
@@ -1126,12 +1234,20 @@ public class ConferenceInfoDocument
         {
             Element typeElement
                     = XMLUtils.findChild(mediaElement, TYPE_ELEMENT_NAME);
-            if (typeElement == null)
+            if (type == null || type.equals(""))
             {
-                typeElement = document.createElement(TYPE_ELEMENT_NAME);
-                mediaElement.appendChild(typeElement);
+                if (typeElement != null)
+                    mediaElement.removeChild(typeElement);
             }
-            typeElement.setTextContent(type);
+            else
+            {
+                if (typeElement == null)
+                {
+                    typeElement = document.createElement(TYPE_ELEMENT_NAME);
+                    mediaElement.appendChild(typeElement);
+                }
+                typeElement.setTextContent(type);
+            }
         }
 
         /**
