@@ -64,17 +64,22 @@ public class LoginPluginActivator implements BundleActivator{
      */
     private void init(){
 
-        EurekaFrame accountRegFrame = new EurekaFrame();
+//        EurekaFrame accountRegFrame = new EurekaFrame();
+        LoginFrame accountRegFrame = new LoginFrame();
 
-            accountRegFrame.pack();
-
+//            accountRegFrame.pack();
+            /*
             Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
 
             double sw = screenSize.getWidth();
             double sh = screenSize.getHeight();
             int w = (int) accountRegFrame.getWidth();
             int h = (int) accountRegFrame.getWidth();
-
+            */
+            accountRegFrame.setSize(365, 300);
+            accountRegFrame.setLocation(Toolkit.getDefaultToolkit().getScreenSize().width/2 - 250,
+                Toolkit.getDefaultToolkit().getScreenSize().height/2 - 200);
+            accountRegFrame.setResizable(true);
 //            accountRegFrame.setLocation(screenSize.width / 2
 //                    - accountRegFrame.getWidth() / 2, screenSize.height / 2
 //                    - accountRegFrame.getHeight() / 2);
