@@ -119,6 +119,10 @@ public class Constants
         = new Color(GuiActivator.getResources().
             getColor("service.gui.CONTACT_LIST_GROUP_GRADIENT"));
 
+    public static Color MAINFRAME_ACCOUNTPANEL_BG_COLOR
+            = new Color(GuiActivator.getResources().
+            getColor("service.gui.MAINFRAME_ACCOUNTPANEL_BG_COLOR"));
+
     /*
      * ======================================================================
      * --------------------------- FONT CONSTANTS ---------------------------

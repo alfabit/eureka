@@ -22,6 +22,8 @@ import net.java.sip.communicator.impl.gui.main.chat.conference.*;
 import net.java.sip.communicator.impl.gui.main.contactlist.*;
 import net.java.sip.communicator.impl.gui.main.menus.*;
 import net.java.sip.communicator.impl.gui.main.presence.*;
+import net.java.sip.communicator.impl.gui.utils.*;
+import net.java.sip.communicator.impl.gui.utils.Constants;
 import net.java.sip.communicator.plugin.desktoputil.*;
 import net.java.sip.communicator.plugin.desktoputil.event.*;
 import net.java.sip.communicator.service.contacteventhandler.*;
@@ -353,6 +355,9 @@ public class MainFrame
 
         this.mainPanel.add(centerPanel, BorderLayout.CENTER);
 
+        //decorate
+        statusBarPanel.setBackground(Constants.MAINFRAME_ACCOUNTPANEL_BG_COLOR);
+
         if (singleWContainer != null)
         {
             JSplitPane topSplitPane
@@ -439,11 +444,12 @@ public class MainFrame
         }
         else
         {
-            JPanel panel = new TransparentPanel(new BorderLayout(5, 5));
+            JPanel panel = new TransparentPanel(new BorderLayout(0, 5));
 
-            panel.setBorder(BorderFactory.createEmptyBorder(3, 5, 3, 5));
+            //panel.setBorder(BorderFactory.createEmptyBorder(3, 5, 3, 5));
 
             topComponent = panel;
+            topComponent.setBackground(Constants.MAINFRAME_ACCOUNTPANEL_BG_COLOR);
         }
 
         return topComponent;

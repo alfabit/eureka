@@ -404,6 +404,7 @@ public class ContactListCellRenderer
 
         Graphics2D g2 = (Graphics2D) g;
 
+        // If this is a contact group
         if (!this.isLeaf)
         {
             final int width = getWidth();
@@ -419,9 +420,11 @@ public class ContactListCellRenderer
         if (this.isSelected)
         {
             g2.setColor(Constants.SELECTED_COLOR);
-            g2.fillRoundRect(   1, 1,
-                                this.getWidth() - 2, this.getHeight() - 1,
-                                10, 10);
+            g2.drawLine(1, 1, this.getWidth(), 1);
+            g2.drawLine(1, this.getHeight()-2, this.getWidth(), this.getHeight()-2);
+//            g2.fillRoundRect(   1, 1,
+//                                this.getWidth() - 2, this.getHeight() - 1,
+//                                10, 10);
         }
     }
 

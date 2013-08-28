@@ -261,12 +261,14 @@ public class PluginListCellRenderer
 
         if (this.isSelected)
         {
-            GradientPaint p =
-                new GradientPaint(width / 2, 0, SELECTED_START_COLOR,
-                    width / 2, height, SELECTED_END_COLOR);
-
-            g2.setPaint(p);
-            g2.fillRoundRect(1, 1, width, height - 1, 7, 7);
+//            GradientPaint p =
+//                new GradientPaint(width / 2, 0, SELECTED_START_COLOR,
+//                    width / 2, height, SELECTED_END_COLOR);
+//
+//            g2.setPaint(p);
+            g2.setColor(SELECTED_START_COLOR);
+            g2.drawLine(1, 1, width, 2);
+            g2.drawLine(1, height-2, width, 2);
         }
 
         g2.setColor(SELECTED_START_COLOR);

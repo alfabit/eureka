@@ -555,9 +555,12 @@ public class ContactListTreeCellRenderer
 
         if (isSelected)
         {
-            g2.setPaint(new GradientPaint(0, 0,
-                Constants.SELECTED_COLOR, 0, getHeight(),
-                Constants.SELECTED_GRADIENT_COLOR));
+//            g2.setPaint(new GradientPaint(0, 0,
+//                Constants.SELECTED_COLOR, 0, getHeight(),
+//                Constants.SELECTED_GRADIENT_COLOR));
+
+//            g2.drawLine(1, 1, this.getWidth(), 1);
+//            g2.drawLine(1, this.getHeight()-2, this.getWidth(), this.getHeight()-2);
 
             borderColor = Constants.SELECTED_COLOR;
         }
@@ -571,10 +574,14 @@ public class ContactListTreeCellRenderer
             borderColor = Constants.CONTACT_LIST_GROUP_BG_COLOR;
         }
 
-        g2.fillRect(0, 0, getWidth(), getHeight());
+//        g2.fillRect(0, 0, getWidth(), getHeight());
         g2.setColor(borderColor);
         g2.drawLine(0, 0, getWidth(), 0);
-        g2.drawLine(0, getHeight() - 1, getWidth(), getHeight() - 1);
+        if (!(treeNode instanceof GroupNode))
+        {
+            g2.drawLine(0, getHeight() - 1, getWidth(), getHeight() - 1);
+        }
+
     }
 
     /**
