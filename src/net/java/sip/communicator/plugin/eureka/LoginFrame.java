@@ -63,6 +63,8 @@ public class LoginFrame extends SIPCommFrame implements ServiceListener, ActionL
 
 //		==================================================
 
+//        Панель капчи
+
         JPanel panelRegform = new JPanel();
         panelRegform.setLayout(new BoxLayout(panelRegform, BoxLayout.Y_AXIS));
 
