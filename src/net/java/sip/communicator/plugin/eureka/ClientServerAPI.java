@@ -6,6 +6,10 @@ import org.json.simple.JSONValue;
 import org.json.simple.parser.ParseException;
 
 /**
+ * Class defines methods for convertation data into JSON-objects and parsing JSON-objects to separate data.
+ * Class contains Registration, Register Validation, Authentication, GetSettings, GetBalance, GetCallRate procedures.
+ * All sendRequest-methods return JSON-objects
+ * All receiveResponse-methods return main value or objects of special defined classes
  * Created with IntelliJ IDEA.
  * User: Zenit
  * Date: 26.08.13
@@ -48,7 +52,9 @@ public class ClientServerAPI {
     private static final int RESULT_SERVER_ERROR = -666;
 
     /**
-     * RegistrationInit Request
+     * If client is not registered in Eureka system he sends a package of data for registration.
+     * If register is OK client received unique code for confirmation register process.
+     * This code client receives on that <b><i>phone</i></b> by SMS and <b><i>email</i></b> he defined into registration process.
      * @param phone phone number to which the code will be sent
      * @param email user email to which the code will be sent
      * @param firstName user's first name for database
@@ -67,7 +73,8 @@ public class ClientServerAPI {
     }
 
     /**
-     * RegistrationInit Response
+     * After Client have sent registration data to system, he received unique code for confirmation register process.
+     * This code is sent on phone by SMS or email defined in registration data
      * @param responseContent response content
      * @return responseCode
      */
@@ -107,12 +114,14 @@ public class ClientServerAPI {
     }
 
     /**
-     * RegistrationValidate Request
+     * After Client have received validation code he must send it to Eureka registration system with that
+     * <b><i>phone</i></b> number he defined in registration data.
+     * On this phone number by SMS and <b><i>email</i></b> he defined in registration process Client will receive
+     * his Eureka-login (Eureka phone number) and password.
      * @param phone phone number to which the code will be sent
      * @param validateCode code received by SMS or sent by e-mail
      * @return JSON-object to send on server
      */
-
     public static JSONObject registrationValidateConvertRequest(String phone, String validateCode) {
         JSONObject jsonObj = new JSONObject();
 
@@ -123,11 +132,12 @@ public class ClientServerAPI {
     }
 
     /**
-     * RegistrationValidate Response
+     * After Client have sent validation code, he received Eureka-login (Eureka phone number) and password on defined
+     * phone by SMS and defined email in registration process.
+     * This code is sent on phone by SMS or email defined in registration data
      * @param responseContent response content
      * @return responseCode
      */
-
     public static int registrationValidateParseResponse(String responseContent) {
         JSONObject jsonObj = null;
 
@@ -163,7 +173,7 @@ public class ClientServerAPI {
     }
 
     /**
-     * Authentication Request
+     * Client enters the system
      * @param login login (420*phone number) received by SMS or sent by e-mail
      * @param password password received by SMS or sent by e-mail
      * @return JSON-object to send on server
@@ -179,7 +189,7 @@ public class ClientServerAPI {
     }
 
     /**
-     * Authentication Response
+     * Result of Client's enter system request
      * @param responseContent response content
      * @return responseCode
      */
@@ -220,7 +230,7 @@ public class ClientServerAPI {
 
 
     /**
-     * GetSettings Request
+     * Client wants to receive his settings from server
      * @param login login (420*phone number) received by SMS or sent by e-mail
      * @param password password received by SMS or sent by e-mail
      * @return JSON-object to send on server
@@ -236,7 +246,8 @@ public class ClientServerAPI {
     }
 
     /**
-     * GetSettings Response
+     * Result of Client's get settings request.
+     * Result is a custom <b><i>Account</i></b> class, which encapsulates all sent settings
      * @param responseContent response content
      * @return Account object
      */
@@ -303,7 +314,7 @@ public class ClientServerAPI {
                         }
                     }
                 }
-             }
+            }
         }
 
         System.out.println("\n ===> 4. GetSettings : Server response <===");
@@ -336,7 +347,7 @@ public class ClientServerAPI {
     }
 
     /**
-     * Balance Request
+     * Client sends balance request
      * @param login login (420*phone number) received by SMS or sent by e-mail
      * @param password password received by SMS or sent by e-mail
      * @return JSON-object to send on server
@@ -352,7 +363,7 @@ public class ClientServerAPI {
     }
 
     /**
-     * Balance Response
+     * Client receives balance data in <b><i>EE.cc &#8364;</i></b> format
      * @param responseContent response content
      * @return balance value
      */
@@ -402,7 +413,7 @@ public class ClientServerAPI {
 
 
     /**
-     * GetCallRate Request
+     * Client wants to receive his call rates from server
      * @param login login (420*phone number) received by SMS or sent by e-mail
      * @param password password received by SMS or sent by e-mail
      * @return JSON-object to send on server
@@ -419,7 +430,8 @@ public class ClientServerAPI {
     }
 
     /**
-     * GetCallRate Response
+     * Result of Client's get call rates request.
+     * Result is a custom <b><i>CallPrice</i></b> class, which encapsulates all sent settings
      * @param responseContent response content
      * @return CallPrice object
      */
@@ -515,6 +527,9 @@ public class ClientServerAPI {
         return callPrices;
     }
 
+    /**
+     * Custom class, which encapsulates Client's settings he want to download from system
+     */
     public static class Account{
         private int id;
         private String login;
@@ -584,6 +599,9 @@ public class ClientServerAPI {
         }
     }
 
+    /**
+     * Custom class, which encapsulates Client's call rates he want to get from system
+     */
     public static class CallPrice{
         private int accountId;
         private String destination;

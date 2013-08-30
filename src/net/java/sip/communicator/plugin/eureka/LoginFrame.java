@@ -15,6 +15,7 @@ import java.awt.event.KeyListener;
 import java.util.regex.Pattern;
 
 /**
+ * Login screen into JITSI. Contains login (Eureka© phone number) field, password field, register function, get settings function
  * Created with IntelliJ IDEA.
  * User: Zenit
  * Date: 28.08.13
@@ -23,10 +24,13 @@ import java.util.regex.Pattern;
  */
 public class LoginFrame extends SIPCommFrame implements ServiceListener, ActionListener, KeyListener, Skinnable
 {
-    private JTextField tfPhoneNumber;
-    private JTextField tfConfirmCode;
+
+    static JFrame loginFrame, registerFrame, validateRegisterFrame;
+
+    private JTextField tfLogin;
+    private JTextField tfPass;
     private JButton bEnter;
-    private JButton bCancel;
+    private JButton bClose;
 
     private String receivedCode;
 
@@ -42,114 +46,118 @@ public class LoginFrame extends SIPCommFrame implements ServiceListener, ActionL
 
     public LoginFrame()/* throws HeadlessException, IOException*/ {
 
+        loginFrame = this;
+
         setIconImage(Resources.getImage("plugin.eureka.APP_ICON").getImage());
         String title = Resources.getString("plugin.eureka.LOGIN_FRAME_TITLE");
         setTitle(title);
 
-        setLayout(new BorderLayout());
         setContentPane(new JLabel(Resources.getImage("plugin.eureka.FRAME_BACKGROUND")));
         setLayout(new FlowLayout());
 
 //		==================================================
 
+//		>> Logo-image <<
+
         JPanel panelLogo = new JPanel(new BorderLayout());
         panelLogo.setOpaque(false);
 
-        ImageIcon image = Resources.getImage("plugin.eureka.SPLASH");
-        JLabel label = new JLabel("", image, JLabel.CENTER);
-        panelLogo.add( label, BorderLayout.CENTER );
+        ImageIcon imageIcon = Resources.getImage("plugin.eureka.SPLASH");
+        JLabel labelLogo = new JLabel("", imageIcon, JLabel.CENTER);
+        panelLogo.add( labelLogo, BorderLayout.CENTER );
 
         add(panelLogo);
 
 //		==================================================
 
-//        Панель капчи
+//        >> Login Form <<
 
-        JPanel panelRegform = new JPanel();
-        panelRegform.setLayout(new BoxLayout(panelRegform, BoxLayout.Y_AXIS));
+        JPanel panelLoginForm = new JPanel();
+        panelLoginForm.setLayout(new BoxLayout(panelLoginForm, BoxLayout.Y_AXIS));
 
+//		>> Login panel <<
 
-        JPanel panelPhone = new JPanel(new GridLayout(1,2));
+        JPanel panelLogin = new JPanel(new GridLayout(1,2));
 
-        JLabel lPhoneNumber = new JLabel(Resources.getString("plugin.eureka.LOGIN_FRAME_PHONE_LABEL"));
-        lPhoneNumber.setBorder(BorderFactory.createEmptyBorder(0, 5, 0, 30));
+        JLabel lLogin = new JLabel(Resources.getString("plugin.eureka.PHONE_NUMBER"));
+        lLogin.setBorder(BorderFactory.createEmptyBorder(0, 5, 0, 30));
 
-        tfPhoneNumber = new JTextField(10);
-        tfPhoneNumber.setName("tfPhoneNumber");
-        tfPhoneNumber.addKeyListener(this);
+        tfLogin = new JTextField(10);
+        tfLogin.setName("tfLogin");
+        tfLogin.addKeyListener(this);
 
-        panelPhone.add(lPhoneNumber);
-        panelPhone.add(tfPhoneNumber);
+        panelLogin.add(lLogin);
+        panelLogin.add(tfLogin);
 
-        panelPhone.setOpaque(false);
+        panelLogin.setOpaque(false);
 //		  panelPhone.setBorder(BorderFactory.createMatteBorder(5, 10, 5, 5, new Color(0, 0, 0, 0)));
-        panelPhone.setBorder(BorderFactory.createEmptyBorder(0, 5, 5, 5));
+        panelLogin.setBorder(BorderFactory.createEmptyBorder(0, 5, 5, 5));
 
-        JPanel panelCode = new JPanel(new GridLayout(1,2));
+//		>> Password panel <<
 
-        JLabel lConfirmCode = new JLabel(Resources.getString("plugin.eureka.LOGIN_FRAME_CODE_LABEL"));
-        lConfirmCode.setBorder(BorderFactory.createEmptyBorder(0, 5, 0, 30));
+        JPanel panelPass = new JPanel(new GridLayout(1,2));
 
-        tfConfirmCode = new JTextField(10);
-        tfConfirmCode.setName("tfConfirmCode");
-        tfConfirmCode.addKeyListener(this);
+        JLabel lPass = new JLabel(Resources.getString("plugin.eureka.PASSWORD"));
+        lPass.setBorder(BorderFactory.createEmptyBorder(0, 5, 0, 30));
 
-        panelCode.add(lConfirmCode);
-        panelCode.add(tfConfirmCode);
+        tfPass = new JTextField(10);
+        tfPass.setName("tfPass");
+        tfPass.addKeyListener(this);
 
-        panelCode.setOpaque(false);
+        panelPass.add(lPass);
+        panelPass.add(tfPass);
+
+        panelPass.setOpaque(false);
 //		  panelCode.setBorder(BorderFactory.createMatteBorder(5, 10, 10, 5, new Color(0, 0, 0, 0)));
-        panelCode.setBorder(BorderFactory.createEmptyBorder(5, 5, 10, 5));
+        panelPass.setBorder(BorderFactory.createEmptyBorder(5, 5, 10, 5));
+
+//		==================================================
+
+//		>> Register link panel <<
 
         JPanel panelRegisterProposal = new JPanel(new FlowLayout(FlowLayout.RIGHT));
 
-
+//		>> Register link <<
 
         JButton lRegisterProposal = new JButton(Resources.getString("plugin.eureka.LOGIN_FRAME_NOT_REGISTERED"));
         lRegisterProposal.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        lRegisterProposal.setFocusPainted(false);
+//        lRegisterProposal.setFocusPainted(false);
+        lRegisterProposal.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                JButton but = (JButton) evt.getSource();
+                but.setForeground(new Color(150, 90, 90));
+            }
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                JButton but = (JButton) evt.getSource();
+                but.setForeground(new Color(60, 60, 60));
+            }
+        });
         lRegisterProposal.setBorder(BorderFactory.createEmptyBorder(5, 0, 0, 5));
         lRegisterProposal.setContentAreaFilled(false);
-        lRegisterProposal.setBorderPainted(false);
-        lRegisterProposal.setOpaque(false);
+        lRegisterProposal.setBorderPainted(true);
+        lRegisterProposal.setOpaque(true);
+        lRegisterProposal.setBackground(new Color(0, 0, 0, 0) );
 
         lRegisterProposal.setActionCommand("buttonRegisterProposal");
         lRegisterProposal.addActionListener(this);
         panelRegisterProposal.add(lRegisterProposal);
 
-
-
-
-
-//		  JLabel lRegisterProposal = new JLabel("<html><i>Еще не зарегистрированы?</i><html>");
-//		  lRegisterProposal.setCursor(new Cursor(Cursor.HAND_CURSOR));
-//		  lRegisterProposal.setBorder(BorderFactory.createEmptyBorder(0, 5, 0, 5));
-//		  panelRegisterProposal.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-//		  panelRegisterProposal.add(lRegisterProposal);
-
-
         panelRegisterProposal.setBackground( new Color(0, 0, 0, 30) );
 //		  panelRegisterProposal.setBorder(BorderFactory.createMatteBorder(5, 10, 5, 5, new Color(0, 0, 0, 0)));
         panelRegisterProposal.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 
+        panelLoginForm.add(panelLogin);
+        panelLoginForm.add(panelPass);
+        panelLoginForm.add(panelRegisterProposal);
 
+        panelLoginForm.setBackground( new Color(0, 0, 0, 30) );
+        panelLoginForm.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
 
-
-
-        panelRegform.add(panelPhone);
-        panelRegform.add(panelCode);
-        panelRegform.add(panelRegisterProposal);
-
-
-
-        panelRegform.setBackground( new Color(0, 0, 0, 30) );
-        panelRegform.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
-
-
-        add(panelRegform);
+        add(panelLoginForm);
 
 //		==================================================
+
+//		>> Autosetts link panel <<
 
         JPanel panelAutoSetts = new JPanel(new BorderLayout());
         panelAutoSetts.setOpaque(false);
@@ -169,52 +177,41 @@ public class LoginFrame extends SIPCommFrame implements ServiceListener, ActionL
 
         add(panelAutoSetts);
 
-
-
 //		==================================================
+
+//		>> Button panel <<
 
         JPanel panelButtons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         panelButtons.setOpaque(false);
 
-        bEnter = new JButton(Resources.getString("plugin.eureka.LOGIN_FRAME_ENTER_BUTTON"));
+        bEnter = new JButton(Resources.getString("plugin.eureka.ENTER_BUTTON"));
         bEnter.setName("bEnter");
         bEnter.setActionCommand("bEnter");
         bEnter.addActionListener(this);
         bEnter.addKeyListener(this);
 
-        bCancel = new JButton(Resources.getString("plugin.eureka.LOGIN_FRAME_CANCEL_BUTTON"));
-        bCancel.setName("bCancel");
-        bCancel.setActionCommand("bCancel");
-        bCancel.addActionListener(this);
-        bCancel.addKeyListener(this);
+        bClose = new JButton(Resources.getString("plugin.eureka.CLOSE_BUTTON"));
+        bClose.setName("bClose");
+        bClose.setActionCommand("bClose");
+        bClose.addActionListener(this);
+        bClose.addKeyListener(this);
 
         panelButtons.add(bEnter);
         panelButtons.setBorder(BorderFactory.createEmptyBorder(15, 180, 0, 5));
-        panelButtons.add(bCancel);
+        panelButtons.add(bClose);
 
         add(panelButtons);
 
-
         setResizable(false);
 
-        new Thread(new Runnable() {
-
-            @Override
+        java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                }
-                receivedCode = receiveCode();
-                JOptionPane.showMessageDialog(null, receivedCode);
+                LoginFrame.loginFrame.toFront();
+                LoginFrame.loginFrame.repaint();
             }
-        }).start();
-
+        });
     }
 
-    @Override
     public void actionPerformed(ActionEvent e) {
 
         if("buttonAutoSetts".equals(e.getActionCommand()))
@@ -223,69 +220,96 @@ public class LoginFrame extends SIPCommFrame implements ServiceListener, ActionL
             buttonRegisterProposal();
         else if("bEnter".equals(e.getActionCommand()))
             buttonEnterAction();
-        else if("bCancel".equals(e.getActionCommand()))
-            buttonCancelAction();
+        else if("bClose".equals(e.getActionCommand()))
+            buttonExitAction();
     }
 
+    /**
+     * shows "use AUTHOSETTINGS" window
+     */
     private void buttonAutoSettsAction() {
 //		TODO: SET WHEN MAIN FUNCIONAL WILL BE DEVELOPING
-        JOptionPane.showMessageDialog(this, "Загрузка автонастроек...    /прописать при полном функионале/");
+        JOptionPane.showMessageDialog(this, Resources.getString("plugin.eureka.TEMP_MESS1"));
     }
 
+    /**
+     * shows Registration window. Current window does not close
+     */
     private void buttonRegisterProposal() {
-//		TODO: SET WHEN MAIN FUNCIONAL WILL BE DEVELOPING
-        JOptionPane.showMessageDialog(this, "Перейти к регистрации...    /прописать при полном функионале/");
+
+        setEnabled(false);
+        LoginFrame.registerFrame = new RegisterFrame();
+        LoginFrame.registerFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE );
+        LoginFrame.registerFrame.setBounds(Toolkit.getDefaultToolkit().getScreenSize().width/2 - 325,
+                Toolkit.getDefaultToolkit().getScreenSize().height/2 - 225,
+                650, 450);
+        LoginFrame.registerFrame.setVisible(true);
+
     }
 
+    /**
+     * Transition to Main window if all fields are filled correctly
+     */
     private void buttonEnterAction() {
 //		TODO: SET WHEN MAIN FUNCIONAL WILL BE DEVELOPING
 
-        if(isPhoneNumberValid() && isCodeValid())
-            JOptionPane.showMessageDialog(this, "Перейти к главному окну...    /прописать при полном функионале/");
+        if(isLoginValid() && isPassValid())
+            JOptionPane.showMessageDialog(this, Resources.getString("plugin.eureka.TEMP_MESS2"));
 //			setVisible(false);
 //			dispose();
         else
             return;
     }
 
-    private void buttonCancelAction() {
+    /**
+     * Exit from application
+     */
+    private void buttonExitAction() {
 //		TODO: SET WHEN MAIN FUNCIONAL WILL BE DEVELOPING
-        JOptionPane.showMessageDialog(this, "Закрыть окно...    /прописать при полном функионале/");
+        JOptionPane.showMessageDialog(this, Resources.getString("plugin.eureka.TEMP_MESS3"));
         setVisible(false);
         dispose();
     }
 
-    private boolean isPhoneNumberValid(){
+    /**
+     * Checks phone field is not empty and has only digits
+     * @return total result of verification
+     */
+    private boolean isLoginValid(){
 
-        if(tfPhoneNumber.getText().length()==0){
-            tfPhoneNumber.setBackground(new Color(255, 180, 180));
-            showMessageDialog("Enter a phone number");
+        if(tfLogin.getText().length()==0){
+            tfLogin.setBackground(new Color(255, 180, 180));
+            showMessageDialog(Resources.getString("plugin.eureka.LOGIN_NO_PHONE_LABEL"));
             return false;
         }
-        else if(!hasOnlyDigits(tfPhoneNumber.getText())){
-            tfPhoneNumber.setBackground(new Color(255, 180, 180));
-            showMessageDialog("Your phone has symbols are not numbers");
+        else if(!hasOnlyDigits(tfLogin.getText())){
+            tfLogin.setBackground(new Color(255, 180, 180));
+            showMessageDialog(Resources.getString("plugin.eureka.LOGIN_INCORRECT_PHONE_LABEL"));
             return false;
         }
         else
-            tfPhoneNumber.setBackground(Color.WHITE);
+            tfLogin.setBackground(Color.WHITE);
         return true;
     }
 
-    private boolean isCodeValid(){
+    /**
+     * Checks password field is not empty
+     * @return total result of verification
+     */
+    private boolean isPassValid(){
 
-        if(tfConfirmCode.getText().length()==0){
-            tfConfirmCode.setBackground(new Color(255, 180, 180));
-            showMessageDialog("You have not entered code");
+        if(tfPass.getText().length()==0){
+            tfPass.setBackground(new Color(255, 180, 180));
+            showMessageDialog(Resources.getString("plugin.eureka.LOGIN_NO_PASS_LABEL"));
             return false;
         }
-        else if(!receivedCode.equals(tfConfirmCode.getText())){
-            tfConfirmCode.setBackground(new Color(255, 180, 180));
-            showMessageDialog("Your have entered invaled code.\nPlease, enter it more carefully");
-            return false;
-        }
+//        else if(!receivedCode.equals(tfPass.getText())){
+//            tfPass.setBackground(new Color(255, 180, 180));
+//            showMessageDialog(Resources.getString("plugin.eureka.LOGIN_INCORRECT_PASS_LABEL"));
+//            return false;
+//        }
         else
-            tfConfirmCode.setBackground(Color.WHITE);
+            tfPass.setBackground(Color.WHITE);
         return true;
     }
 
@@ -333,27 +357,46 @@ public class LoginFrame extends SIPCommFrame implements ServiceListener, ActionL
         return receivedCode;
     }
 
-    @Override
     public void keyTyped(KeyEvent e) {
-        //To change body of implemented methods use File | Settings | File Templates.
+        JComponent comp = (JComponent) e.getSource();
+
+        if(  !( "bEnter".equals(comp.getName())  ||   "bClose".equals(comp.getName())  )  ){
+            JTextField tfAction = (JTextField) e.getSource();
+
+            if(tfAction.getText().length()==0)
+                tfAction.setBackground(Color.WHITE);
+        }
     }
 
-    @Override
     public void keyPressed(KeyEvent e) {
-        //To change body of implemented methods use File | Settings | File Templates.
+        if(e.getKeyCode()==KeyEvent.VK_ENTER){
+
+            JComponent comp = (JComponent) e.getSource();
+            String componentName = comp.getName();
+
+
+            if("tfPhoneNumber".equals(componentName))
+                tfPass.requestFocus();
+            else if("tfConfirmCode".equals(componentName))
+                bEnter.requestFocus();
+
+
+            else if("bEnter".equals(componentName))
+                buttonEnterAction();
+            else if("bClose".equals(componentName))
+                buttonExitAction();
+
+        }
     }
 
-    @Override
     public void keyReleased(KeyEvent e) {
         //To change body of implemented methods use File | Settings | File Templates.
     }
 
-    @Override
     public void serviceChanged(ServiceEvent serviceEvent) {
         //To change body of implemented methods use File | Settings | File Templates.
     }
 
-    @Override
     public void loadSkin() {
         //To change body of implemented methods use File | Settings | File Templates.
     }

@@ -79,7 +79,7 @@ public class LoginPluginActivator implements BundleActivator{
             accountRegFrame.setSize(365, 300);
             accountRegFrame.setLocation(Toolkit.getDefaultToolkit().getScreenSize().width/2 - 250,
                 Toolkit.getDefaultToolkit().getScreenSize().height/2 - 200);
-            accountRegFrame.setResizable(true);
+//            accountRegFrame.setResizable(true);
 //            accountRegFrame.setLocation(screenSize.width / 2
 //                    - accountRegFrame.getWidth() / 2, screenSize.height / 2
 //                    - accountRegFrame.getHeight() / 2);
