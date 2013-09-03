@@ -6,4 +6,3 @@ Bundle-Version: 0.0.1
 System-Bundle: yes
 Import-Package: org.xbill.DNS
 Export-Package: net.java.sip.communicator.service.dns
-Bundle-Activator: net.java.sip.communicator.plugin.eureka.LoginPluginActivator

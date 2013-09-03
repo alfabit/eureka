@@ -6,7 +6,6 @@
  */
 package net.java.sip.communicator.plugin.eureka;
 
-import net.java.sip.communicator.plugin.eureka.LoginPluginActivator;
 import net.java.sip.communicator.service.resources.ResourceManagementServiceUtils;
 import org.jitsi.service.resources.ResourceManagementService;
 
@@ -89,7 +88,7 @@ public class Resources
         if (resourcesService == null)
             resourcesService =
                 ResourceManagementServiceUtils
-                    .getService(LoginPluginActivator.bundleContext);
+                    .getService(EurekaPluginActivator.bundleContext);
         return resourcesService;
     }
 }

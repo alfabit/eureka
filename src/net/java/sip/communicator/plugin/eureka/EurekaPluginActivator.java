@@ -1,5 +1,6 @@
 package net.java.sip.communicator.plugin.eureka;
 
+import net.java.sip.communicator.plugin.eureka.gui.BalanceLabel;
 import net.java.sip.communicator.plugin.simpleaccreg.InitialAccountRegistrationFrame;
 import net.java.sip.communicator.service.contactlist.MetaContactListService;
 import net.java.sip.communicator.service.gui.*;
@@ -29,7 +30,7 @@ import java.util.Iterator;
  * To change this template use File | Settings | File Templates.
  */
 
-public class LoginPluginActivator implements BundleActivator{
+public class EurekaPluginActivator implements BundleActivator{
 
     /**
      * OSGi bundle context.
@@ -37,6 +38,8 @@ public class LoginPluginActivator implements BundleActivator{
     public static BundleContext bundleContext;
 
     private static ResourceManagementService resourcesService;
+
+    Logger logger = Logger.getLogger(EurekaPluginActivator.class);
 
     public void start(BundleContext bc)
             throws Exception
@@ -56,6 +59,24 @@ public class LoginPluginActivator implements BundleActivator{
         }
 
         init();
+
+        //register balance label
+        Hashtable<String, String> containerFilter
+                = new Hashtable<String, String>();
+        containerFilter.put(
+                Container.CONTAINER_ID,
+                Container.CONTAINER_ACCOUNT_SOUTH.getID());
+
+        containerFilter.put(
+                Container.CONTAINER_ID,
+                Container.CONTAINER_MAIN_WINDOW.getID());
+
+        bc.registerService(  PluginComponent.class.getName(),
+                new BalanceLabel(),
+                containerFilter);
+
+        if (logger.isInfoEnabled())
+            logger.info("BALANCE INFO... [REGISTERED]");
 
     }
 

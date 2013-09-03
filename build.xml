@@ -2345,7 +2345,7 @@ javax.swing.event, javax.swing.border"/>
               tofile="${resources}/languages/resources_en.properties"/>
         <!-- Creates a bundle for the default resource pack."-->
         <jar
-            compress="false" destfile="${bundles.dest}/defaultresources.jar"
+            compress="true" destfile="${bundles.dest}/defaultresources.jar"
             manifest="${src}/net/java/sip/communicator/plugin/defaultresourcepack/defaultresourcepack.manifest.mf">
             <zipfileset dir="${dest}/net/java/sip/communicator/plugin/defaultresourcepack"
                     prefix="net/java/sip/communicator/plugin/defaultresourcepack"/>

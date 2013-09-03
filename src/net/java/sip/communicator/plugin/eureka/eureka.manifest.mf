@@ -1,4 +1,4 @@
-Bundle-Activator: net.java.sip.communicator.plugin.eureka.LoginPluginActivator
+Bundle-Activator: net.java.sip.communicator.plugin.eureka.EurekaPluginActivator
 Bundle-Name: Eureka Plugin
 Bundle-Description: An example showing how to make plugins for the ui.
 Bundle-Vendor: sip-communicator.org
