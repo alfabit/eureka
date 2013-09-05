@@ -10,6 +10,9 @@ import java.awt.*;
 import java.awt.image.*;
 
 import javax.swing.*;
+import javax.swing.border.BevelBorder;
+import javax.swing.border.EmptyBorder;
+import javax.swing.border.LineBorder;
 
 import net.java.sip.communicator.impl.gui.*;
 import net.java.sip.communicator.impl.gui.event.*;
@@ -131,6 +134,9 @@ public class AccountStatusPanel
     public AccountStatusPanel(MainFrame mainFrame)
     {
         super(new BorderLayout(10, 0));
+        this.setBorder(new EmptyBorder(3,10,3,10));
+
+        //this.setBorder(new LineBorder(Color.GRAY));
 
         FramedImageWithMenu imageWithMenu
             = new FramedImageWithMenu(

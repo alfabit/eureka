@@ -1513,6 +1513,7 @@ public class OperationSetPersistentPresenceJabberImpl
     {
         try
         {
+            // TODO: Fix strange exception.
             this.resourcePriorityAvailable =
                 Integer.parseInt(parentProvider.getAccountID()
                     .getAccountPropertyString(

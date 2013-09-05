@@ -187,10 +187,8 @@
       </item>
     </group>
   </component>
-  <component name="ProjectInspectionProfilesVisibleTreeState">
-    <entry key="Project Default">
-      <profile-state />
-    </entry>
+  <component name="ProjectDictionaryState">
+    <dictionary name="Руслан" />
   </component>
   <component name="ProjectModuleManager">
     <modules>
@@ -207,7 +205,7 @@
     <configuration default="false" name="run" type="Application" factoryName="Application" singleton="true">
       <extension name="coverage" enabled="false" merge="false" sample_coverage="true" runner="idea" />
       <option name="MAIN_CLASS_NAME" value="net.java.sip.communicator.launcher.SIPCommunicator" />
-      <option name="VM_PARAMETERS" value="-client -Dfelix.config.properties=file:lib/felix.client.run.properties -Djava.util.logging.config.file=lib/logging.properties -Dnet.java.sip.communicator.SC_HOME_DIR_NAME=schome -Djava.library.path=lib/native/windows-64 -Djna.library.path=lib/native/windows-64 -Dapple.laf.useScreenMenuBar=true" />
+      <option name="VM_PARAMETERS" value="-client -Dfelix.config.properties=file:lib/felix.client.run.properties -Djava.util.logging.config.file=lib/logging.properties -Dnet.java.sip.communicator.SC_HOME_DIR_NAME=schome -Djava.library.path=./lib/native/windows-64 -Djna.library.path=./lib/native/windows-64 -Dapple.laf.useScreenMenuBar=true" />
       <option name="PROGRAM_PARAMETERS" value="" />
       <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$" />
       <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="false" />
@@ -217,7 +215,7 @@
       <option name="PASS_PARENT_ENVS" value="true" />
       <module name="jitsi" />
       <envs>
-        <env name="path" value="C:\JAVA\JRE\jre6\bin;.lib/native/windows-64" />
+        <env name="path" value="%path%;C:\Program Files\Java\jre6\bin;C:\JAVA\JRE\jre6\bin;" />
       </envs>
       <RunnerSettings RunnerId="Debug">
         <option name="DEBUG_PORT" value="" />

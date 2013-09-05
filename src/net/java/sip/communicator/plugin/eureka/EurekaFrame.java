@@ -2,19 +2,14 @@ package net.java.sip.communicator.plugin.eureka;
 
 import net.java.sip.communicator.plugin.desktoputil.*;
 import net.java.sip.communicator.service.gui.*;
-import net.java.sip.communicator.service.protocol.OperationFailedException;
-import net.java.sip.communicator.service.protocol.ProtocolProviderService;
 import net.java.sip.communicator.util.Logger;
 import net.java.sip.communicator.util.skin.Skinnable;
 import org.jitsi.service.configuration.ConfigurationService;
 import org.osgi.framework.*;
 
-import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.util.regex.Pattern;
 
 /**
@@ -353,7 +348,7 @@ public class EurekaFrame
         JOptionPane.showMessageDialog(this, mess);
  /*
         PopupDialog popupDialog
-                = LoginPluginActivator.getUIService()
+                = EurekaPluginActivator.getUIService()
                 .getPopupDialog();
 
         popupDialog.showMessagePopupDialog(
@@ -431,7 +426,7 @@ public class EurekaFrame
      */
     public void serviceChanged(ServiceEvent event)
     {
-        Object sService = LoginPluginActivator.bundleContext.
+        Object sService = EurekaPluginActivator.bundleContext.
                 getService(event.getServiceReference());
 
         // we don't care if the source service is not a plugin component
