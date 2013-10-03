@@ -49,7 +49,7 @@ public class CallHistoryButton
     /**
      * Indicates if the history is visible.
      */
-    private boolean isHistoryVisible = false;
+    public boolean isHistoryVisible = false;
 
     /**
      * Indicates if this button currently shows the number of unread
@@ -145,7 +145,7 @@ public class CallHistoryButton
     /**
      * Sets the history view.
      */
-    private void setHistoryView()
+    public void setHistoryView()
     {
         if (isNotificationsView)
             isNotificationsView = false;
@@ -170,7 +170,7 @@ public class CallHistoryButton
      *
      * @param notificationGroups the list of unread notification groups
      */
-    private void setNotificationView(
+    public void setNotificationView(
         Collection<UINotificationGroup> notificationGroups)
     {
         int notificationCount = 0;
@@ -192,6 +192,21 @@ public class CallHistoryButton
             int visibleNotifsPerGroup = 5;
             Iterator<UINotification> notifsIter = group.getUnreadNotifications();
 
+            long time = 19;
+
+            for(int i = 0; i<5; i++){
+                tooltipText += GuiUtils.formatTime(++time)
+                        + "   " + "mess : " + time + "<br/>";
+
+                visibleNotifsPerGroup--;
+
+                if (visibleNotifsPerGroup == 0 && notifsIter.hasNext())
+                    tooltipText += GuiActivator.getResources()
+                            .getI18NString("service.gui.MISSED_CALLS_MORE_TOOL_TIP",
+                                    new String[]{ new Integer(
+                                            notificationCount - 5).toString()});
+            }
+                /*
             while (notifsIter.hasNext() && visibleNotifsPerGroup > 0)
             {
                 UINotification missedCall = notifsIter.next();
@@ -206,6 +221,7 @@ public class CallHistoryButton
                             new String[]{ new Integer(
                                 notificationCount - 5).toString()});
             }
+                   */
         }
 
         this.setToolTipText(tooltipText + "</html>");

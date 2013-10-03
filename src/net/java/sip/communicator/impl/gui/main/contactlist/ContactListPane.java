@@ -8,6 +8,8 @@ package net.java.sip.communicator.impl.gui.main.contactlist;
 
 import java.awt.*;
 import java.awt.event.*;
+import java.awt.event.ContainerEvent;
+import java.awt.event.ContainerListener;
 import java.util.*;
 
 import javax.swing.*;
@@ -16,6 +18,7 @@ import javax.swing.Timer;
 import net.java.sip.communicator.impl.gui.*;
 import net.java.sip.communicator.impl.gui.event.*;
 import net.java.sip.communicator.impl.gui.main.*;
+import net.java.sip.communicator.impl.gui.main.call.CallHistoryButton;
 import net.java.sip.communicator.impl.gui.main.chat.*;
 import net.java.sip.communicator.plugin.desktoputil.*;
 import net.java.sip.communicator.service.contacteventhandler.*;
@@ -53,6 +56,8 @@ public class ContactListPane
 
     private TreeContactList contactList;
 
+    private ContactsAndHistoryButtonsPane tabbedPane;
+
     private final TypingTimer typingTimer = new TypingTimer();
 
     private CommonRightButtonMenu commonRightButtonMenu;
@@ -60,6 +65,8 @@ public class ContactListPane
     private final Logger logger = Logger.getLogger(ContactListPane.class);
 
     private final ChatWindowManager chatWindowManager;
+
+
 
     /**
      * Creates the contactlist scroll panel defining the parent frame.
@@ -100,14 +107,30 @@ public class ContactListPane
         TransparentPanel transparentPanel
             = new TransparentPanel(new BorderLayout());
 
-        transparentPanel.add(contactList, BorderLayout.NORTH);
+//--------------------------------------------------------------
+
+//        transparentPanel.add(contactList, BorderLayout.NORTH);
+
+//        >> added Contacts & History buttonsLayout /replace previous line/
+
+        tabbedPane = new ContactsAndHistoryButtonsPane(contactList);
+        transparentPanel.add(tabbedPane, BorderLayout.NORTH);
+
+//        >> added Contacts & History tabs /replace previous line/
+
+//        ContactsAndHistoryTabbedPane tabbedPane = new ContactsAndHistoryTabbedPane(contactList);
+//        transparentPanel.add(tabbedPane, BorderLayout.NORTH);
+
+//--------------------------------------------------------------
 
         this.setViewportView(transparentPanel);
 
-        transparentPanel.setBorder(BorderFactory.createEmptyBorder(1, 1, 1, 1));
-        this.contactList.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
+//        transparentPanel.setBorder(BorderFactory.createEmptyBorder(1, 1, 1, 1));
+        transparentPanel.setBorder(BorderFactory.createMatteBorder(0, 5, 5, 5, new Color(245, 243, 231)));
+//        this.contactList.setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30));
 
         this.contactList.addContactListListener(this);
+
         this.addMouseListener(new MouseAdapter()
         {
             @Override
@@ -128,6 +151,7 @@ public class ContactListPane
             }
         });
     }
+
 
     /**
      * Returns the contact list.

@@ -202,7 +202,8 @@ public class MainFrame
         String applicationName
             = resources.getSettingsString("service.gui.APPLICATION_NAME");
 
-        this.setTitle(applicationName);
+//        this.setTitle(applicationName);
+        this.setTitle("Eureka messenger");
 
         // sets the title to application name
         // fix for some windows managers(gnome3)
@@ -341,8 +342,14 @@ public class MainFrame
 
         searchPanel.add(searchField);
         searchPanel.add(new DialPadButton(), BorderLayout.WEST);
-        searchPanel.add(createButtonPanel(), BorderLayout.EAST);
-
+//        searchPanel.add(createButtonPanel(), BorderLayout.EAST);
+/*
+        JPanel jp = new JPanel();
+        Component buttonPanel = createButtonPanel();
+        jp.add(buttonPanel);
+        jp.add(new TestHistoryButtonUnreadMess("test", buttonPanel));
+        searchPanel.add(jp, BorderLayout.EAST);
+*/
         northPanel.add(accountStatusPanel, BorderLayout.CENTER);
         northPanel.add(searchPanel, BorderLayout.SOUTH);
 
