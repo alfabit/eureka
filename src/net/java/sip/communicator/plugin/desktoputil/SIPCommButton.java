@@ -230,7 +230,7 @@ public class SIPCommButton
                 visibility = fadeTracker.getFade(this, FadeKind.ROLLOVER);
             }
 
-            visibility /= 2;
+            //visibility /= 2;
 
             g.setColor(new Color(1.0f, 1.0f, 1.0f, visibility));
 
