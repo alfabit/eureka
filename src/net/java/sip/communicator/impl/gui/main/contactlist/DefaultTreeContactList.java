@@ -317,4 +317,15 @@ public class DefaultTreeContactList
 
         return renderer.findComponentAt(translatedX, translatedY);
     }
+
+    @Override
+    public void paint(Graphics g) {
+
+        super.paint(g);    //To change body of overridden methods use File | Settings | File Templates.
+    }
+
+    @Override
+    protected void paintBorder(Graphics g) {
+        super.paintBorder(g);    //To change body of overridden methods use File | Settings | File Templates.
+    }
 }

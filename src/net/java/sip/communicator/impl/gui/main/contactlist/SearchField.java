@@ -6,9 +6,11 @@
  */
 package net.java.sip.communicator.impl.gui.main.contactlist;
 
+import java.awt.*;
 import java.awt.event.*;
 
 import javax.swing.*;
+import javax.swing.border.LineBorder;
 import javax.swing.event.*;
 
 import net.java.sip.communicator.impl.gui.*;
@@ -95,6 +97,7 @@ public class SearchField
         }
 
         this.setBorder(null);
+
         this.setOpaque(false);
 
         this.setDragEnabled(true);

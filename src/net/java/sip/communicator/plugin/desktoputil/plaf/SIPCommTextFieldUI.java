@@ -194,7 +194,7 @@ public class SIPCommTextFieldUI
             if(isRounded)
             {
                 g2.fillRoundRect(1, 1, c.getWidth() - 1, c.getHeight() - 1,
-                        8, 8);
+                        6, 6);
             }
             else
             {
@@ -239,7 +239,7 @@ public class SIPCommTextFieldUI
             if(isRounded)
             {
                 g2.drawRoundRect(
-                    0, 0, c.getWidth() - 1, c.getHeight() - 1, 8, 8);
+                    0, 0, c.getWidth() - 1, c.getHeight() - 1, 6, 6);
             }
             else
             {

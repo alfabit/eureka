@@ -13,6 +13,9 @@ import java.util.*;
 import java.util.List;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import javax.swing.border.LineBorder;
+import javax.swing.border.MatteBorder;
 
 import net.java.sip.communicator.impl.gui.*;
 import net.java.sip.communicator.impl.gui.customcontrols.*;
@@ -338,7 +341,7 @@ public class MainFrame
         this.setJMenuBar(menu);
 
         TransparentPanel searchPanel
-            = new TransparentPanel(new BorderLayout(5, 0));
+            = new TransparentPanel(new BorderLayout(5, 5));
 
         searchPanel.add(searchField);
         searchPanel.add(new DialPadButton(), BorderLayout.WEST);
@@ -350,8 +353,18 @@ public class MainFrame
         jp.add(new TestHistoryButtonUnreadMess("test", buttonPanel));
         searchPanel.add(jp, BorderLayout.EAST);
 */
-        northPanel.add(accountStatusPanel, BorderLayout.CENTER);
-        northPanel.add(searchPanel, BorderLayout.SOUTH);
+        TransparentPanel accountStatusWrapper = new TransparentPanel(new BorderLayout());
+        accountStatusWrapper.add(accountStatusPanel);
+        accountStatusWrapper.setBorder(new MatteBorder(0,0,1,0, new Color(209,203,177)));
+        northPanel.add(accountStatusWrapper, BorderLayout.CENTER);
+
+        TransparentPanel searchPanelWrapper = new TransparentPanel(new BorderLayout(10,10));
+        searchPanelWrapper.add(searchPanel);
+        searchPanelWrapper.setBorder(
+                BorderFactory.createCompoundBorder(
+                new MatteBorder(1,0,0,0, Color.white),new EmptyBorder(5,5,5,5)
+                        ));
+        northPanel.add(searchPanelWrapper, BorderLayout.SOUTH);
 
         centerPanel.add(contactListPanel, BorderLayout.CENTER);
 
@@ -451,7 +464,7 @@ public class MainFrame
         }
         else
         {
-            JPanel panel = new TransparentPanel(new BorderLayout(0, 5));
+            JPanel panel = new TransparentPanel(new BorderLayout(0, 0));
 
             //panel.setBorder(BorderFactory.createEmptyBorder(3, 5, 3, 5));
 

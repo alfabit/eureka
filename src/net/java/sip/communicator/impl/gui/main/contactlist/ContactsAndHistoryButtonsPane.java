@@ -1,12 +1,15 @@
 package net.java.sip.communicator.impl.gui.main.contactlist;
 
 import net.java.sip.communicator.impl.gui.GuiActivator;
+import net.java.sip.communicator.impl.gui.lookandfeel.SIPCommBorders;
 import net.java.sip.communicator.impl.gui.main.UINotification;
 import net.java.sip.communicator.impl.gui.main.UINotificationGroup;
 import net.java.sip.communicator.impl.gui.main.UINotificationListener;
 import net.java.sip.communicator.impl.gui.main.UINotificationManager;
 import net.java.sip.communicator.impl.gui.main.call.CallHistoryButton;
 import net.java.sip.communicator.impl.gui.utils.ImageLoader;
+import net.java.sip.communicator.plugin.desktoputil.SIPCommScrollPane;
+import net.java.sip.communicator.plugin.desktoputil.TransparentPanel;
 import net.java.sip.communicator.util.GuiUtils;
 import net.java.sip.communicator.util.skin.Skinnable;
 
@@ -25,7 +28,7 @@ import java.util.Iterator;
  * Time: 10:47
  * To change this template use File | Settings | File Templates.
  */
-public class ContactsAndHistoryButtonsPane extends JPanel implements UINotificationListener,
+public class ContactsAndHistoryButtonsPane extends TransparentPanel implements UINotificationListener,
         Skinnable, ActionListener {
 
     /**
@@ -101,9 +104,8 @@ public class ContactsAndHistoryButtonsPane extends JPanel implements UINotificat
 
     public ContactsAndHistoryButtonsPane(TreeContactList contactList) {
 
-        setLayout(new GridBagLayout());
 
-        GridBagConstraints c = new GridBagConstraints();
+        setLayout(new BorderLayout(0, 0));
 
         historyImage
                 = ImageLoader.getImage(ImageLoader.CALL_HISTORY_BUTTON);
@@ -115,42 +117,37 @@ public class ContactsAndHistoryButtonsPane extends JPanel implements UINotificat
                 = ImageLoader.getImage(
                 ImageLoader.CALL_HISTORY_BUTTON_NOTIFICATION);
 
-        btnContacts = new TabButton("Contacts");
-        btnContacts.isActive = true;
+        btnContacts = new TabButton(GuiActivator.getResources().getI18NString("service.gui.CONTACTS"));
+        btnContacts.setActive(true);
         btnContacts.addActionListener(this);
-        c.weightx = 1;
-        c.fill = GridBagConstraints.HORIZONTAL;
-        c.gridx = 0;
-        c.gridy = 0;
-        add(btnContacts, c);
+        //btnContacts.setRoundedTopLeft(true);
+        btnContacts.setPreferredSize(new Dimension(100,25));
 
-        btnHistory = new TabButton("History");
-        btnHistory.isActive = false;
+        //add(btnContacts, BorderLayout.WEST);
+
+        btnHistory = new TabButton(GuiActivator.getResources().getI18NString("service.gui.HISTORY"));
+        btnHistory.setActive(false);
+        //btnHistory.setRoundedTopRight(true);
+        btnHistory.setPreferredSize(new Dimension(100,25));
 //        btnHistory = new CallHistoryButton();
         btnHistory.addActionListener(this);
-        c.fill = GridBagConstraints.HORIZONTAL;
-        c.weightx = 1;
-        c.gridx = 1;
-        c.gridy = 0;
-        add(btnHistory, c);
- /*
-        JButton btnTest = new JButton("TestMessage");            // 3-rd button for generating test notification about unread messages
-        btnTest.addActionListener(this);
-        c.fill = GridBagConstraints.HORIZONTAL;
-        c.weightx = 1;
-        c.gridx = 2;
-        c.gridy = 0;
-        add(btnTest, c);
- */
-        treeContactsList = contactList;
-        c.fill = GridBagConstraints.HORIZONTAL;
-        c.ipady = 140;
-        c.weightx = 0.0;
-        c.gridwidth = 3;
-        c.gridx = 0;
-        c.gridy = 1;
 
-        add(contactList, c);
+        //add(btnHistory, BorderLayout.EAST);
+
+        TransparentPanel buttonsBar = new TransparentPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        buttonsBar.setComponentOrientation(ComponentOrientation.LEFT_TO_RIGHT);
+        buttonsBar.add(btnContacts);
+        buttonsBar.add(btnHistory);
+
+        add(buttonsBar, BorderLayout.NORTH);
+
+        treeContactsList = contactList;
+
+        SIPCommScrollPane contactListWrapper = new SIPCommScrollPane();
+        contactListWrapper.setViewportView(contactList);
+        contactListWrapper.setBorder(null);
+        //contactList.setBorder();
+        add(contactListWrapper, BorderLayout.CENTER);
     }
 
     public void actionPerformed(ActionEvent e) {
@@ -158,6 +155,7 @@ public class ContactsAndHistoryButtonsPane extends JPanel implements UINotificat
         if(((JButton)e.getSource()).getActionCommand().equals("TestMessage")){     // unread messages notification simulation
             if (!isHistoryVisible && 5 > 0)
             {
+                // WTF??
                 ArrayList notificationGroups = new ArrayList();
                 notificationGroups.add(new UINotificationGroup("AAAA", "aaa"));
                 notificationGroups.add(new UINotificationGroup("DDD", "bbb"));
@@ -235,13 +233,13 @@ public class ContactsAndHistoryButtonsPane extends JPanel implements UINotificat
 //            btnContacts.setBgImage(historyImage);
 //            btnHistory.setBgImage(pressedHistoryImage);
 
-            btnContacts.setText("Not Active");
-            btnContacts.setForeground(Color.green);
-            btnContacts.isActive = false;
+            //btnContacts.setText("Not Active");
+            //btnContacts.setForeground(Color.green);
+            btnContacts.setActive(false);
 
-            btnHistory.setText("Active");
-            btnHistory.setForeground(Color.red);
-            btnHistory.isActive = true;
+            //btnHistory.setText("Active");
+            //btnHistory.setForeground(Color.red);
+            btnHistory.setActive(true);
 
             btnHistory.setToolTipText(showContactListToolTip);
         }
@@ -250,13 +248,13 @@ public class ContactsAndHistoryButtonsPane extends JPanel implements UINotificat
 //            btnContacts.setBgImage(pressedHistoryImage);
 //            btnHistory.setBgImage(historyImage);
 
-            btnContacts.setText("Active");
-            btnContacts.setForeground(Color.red);
-            btnContacts.isActive = true;
+            //btnContacts.setText("Active");
+            //btnContacts.setForeground(Color.red);
+            btnContacts.setActive(true);
 
-            btnHistory.setText("Not Active");
-            btnHistory.setForeground(Color.green);
-            btnHistory.isActive = false;
+            //btnHistory.setText("Not Active");
+            //btnHistory.setForeground(Color.green);
+            btnHistory.setActive(false);
 
             btnHistory.setToolTipText(callHistoryToolTip);
         }

@@ -40,7 +40,7 @@ import org.osgi.framework.*;
  * @author Yana Stamcheva
  */
 public class ContactListPane
-    extends SIPCommScrollPane
+    extends TransparentPanel
     implements  MessageListener,
                 TypingNotificationsListener,
                 FileTransferListener,
@@ -75,15 +75,16 @@ public class ContactListPane
      */
     public ContactListPane(MainFrame mainFrame)
     {
+        super(new BorderLayout(0,0));
         this.mainFrame = mainFrame;
 
         this.chatWindowManager
             = GuiActivator.getUIService().getChatWindowManager();
 
-        this.setHorizontalScrollBarPolicy(
-            JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+//        this.setHorizontalScrollBarPolicy(
+//            JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 
-        this.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, Color.GRAY));
+        //this.setBorder(BorderFactory.createMatteBorder(1, 1, 1, 1, Color.RED));
 
         this.initPluginComponents();
     }
@@ -114,7 +115,7 @@ public class ContactListPane
 //        >> added Contacts & History buttonsLayout /replace previous line/
 
         tabbedPane = new ContactsAndHistoryButtonsPane(contactList);
-        transparentPanel.add(tabbedPane, BorderLayout.NORTH);
+        transparentPanel.add(tabbedPane);
 
 //        >> added Contacts & History tabs /replace previous line/
 
@@ -123,10 +124,11 @@ public class ContactListPane
 
 //--------------------------------------------------------------
 
-        this.setViewportView(transparentPanel);
+        //this.setViewportView(transparentPanel);
+        this.add(transparentPanel);
 
 //        transparentPanel.setBorder(BorderFactory.createEmptyBorder(1, 1, 1, 1));
-        transparentPanel.setBorder(BorderFactory.createMatteBorder(0, 5, 5, 5, new Color(245, 243, 231)));
+        transparentPanel.setBorder(BorderFactory.createEmptyBorder(0, 5, 5, 5));
 //        this.contactList.setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30));
 
         this.contactList.addContactListListener(this);
