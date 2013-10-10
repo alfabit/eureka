@@ -1,6 +1,7 @@
 package net.java.sip.communicator.plugin.eureka;
 
-import net.java.sip.communicator.plugin.desktoputil.SIPCommFrame;
+import net.java.sip.communicator.service.gui.ExportedWindow;
+import net.java.sip.communicator.service.gui.UIService;
 import net.java.sip.communicator.util.Logger;
 import net.java.sip.communicator.util.skin.Skinnable;
 import org.osgi.framework.ServiceEvent;
@@ -8,10 +9,7 @@ import org.osgi.framework.ServiceListener;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
+import java.awt.event.*;
 import java.util.regex.Pattern;
 
 /**
@@ -22,10 +20,10 @@ import java.util.regex.Pattern;
  * Time: 14:15
  * To change this template use File | Settings | File Templates.
  */
-public class LoginFrame extends SIPCommFrame implements ServiceListener, ActionListener, KeyListener, Skinnable
-{
+public class LoginFrame extends JDialog implements ServiceListener, ActionListener, KeyListener, Skinnable {
 
-    static JFrame loginFrame, registerFrame, validateRegisterFrame;
+    static JDialog loginFrame;
+    static JFrame registerFrame, validateRegisterFrame;
 
     private JTextField tfLogin;
     private JTextField tfPass;
@@ -40,13 +38,33 @@ public class LoginFrame extends SIPCommFrame implements ServiceListener, ActionL
      */
     private final Logger logger
             = Logger.getLogger(EurekaFrame.class);
+    private UIService uiService;
 
 //    private final Collection<AccountRegistrationPanel> registrationForms =
 //            new Vector<AccountRegistrationPanel>();
 
-    public LoginFrame()/* throws HeadlessException, IOException*/ {
+    public LoginFrame(UIService uiService)/* throws HeadlessException, IOException*/ {
+        setModal(true);
+
+        this.uiService = uiService;
+        final ExportedWindow mainWindow = this.uiService.getExportedWindow(ExportedWindow.MAIN_WINDOW);
+        if (mainWindow != null) {
+            mainWindow.setVisible(false);
+        }
+
+        this.addWindowStateListener(new WindowStateListener() {
+            public void windowStateChanged(WindowEvent e) {
+                if (e.getNewState() == WindowEvent.WINDOW_GAINED_FOCUS) {
+                    if (mainWindow.isVisible()) {
+                        mainWindow.setVisible(false);
+                    }
+                }
+            }
+        });
+
 
         loginFrame = this;
+
 
         setIconImage(Resources.getImage("plugin.eureka.APP_ICON").getImage());
         String title = Resources.getString("plugin.eureka.LOGIN_FRAME_TITLE");
@@ -64,7 +82,7 @@ public class LoginFrame extends SIPCommFrame implements ServiceListener, ActionL
 
         ImageIcon imageIcon = Resources.getImage("plugin.eureka.SPLASH");
         JLabel labelLogo = new JLabel("", imageIcon, JLabel.CENTER);
-        panelLogo.add( labelLogo, BorderLayout.CENTER );
+        panelLogo.add(labelLogo, BorderLayout.CENTER);
 
         add(panelLogo);
 
@@ -77,7 +95,7 @@ public class LoginFrame extends SIPCommFrame implements ServiceListener, ActionL
 
 //		>> Login panel <<
 
-        JPanel panelLogin = new JPanel(new GridLayout(1,2));
+        JPanel panelLogin = new JPanel(new GridLayout(1, 2));
 
         JLabel lLogin = new JLabel(Resources.getString("plugin.eureka.PHONE_NUMBER"));
         lLogin.setBorder(BorderFactory.createEmptyBorder(0, 5, 0, 30));
@@ -95,7 +113,7 @@ public class LoginFrame extends SIPCommFrame implements ServiceListener, ActionL
 
 //		>> Password panel <<
 
-        JPanel panelPass = new JPanel(new GridLayout(1,2));
+        JPanel panelPass = new JPanel(new GridLayout(1, 2));
 
         JLabel lPass = new JLabel(Resources.getString("plugin.eureka.PASSWORD"));
         lPass.setBorder(BorderFactory.createEmptyBorder(0, 5, 0, 30));
@@ -127,6 +145,7 @@ public class LoginFrame extends SIPCommFrame implements ServiceListener, ActionL
                 JButton but = (JButton) evt.getSource();
                 but.setForeground(new Color(150, 90, 90));
             }
+
             public void mouseExited(java.awt.event.MouseEvent evt) {
                 JButton but = (JButton) evt.getSource();
                 but.setForeground(new Color(60, 60, 60));
@@ -136,13 +155,13 @@ public class LoginFrame extends SIPCommFrame implements ServiceListener, ActionL
         lRegisterProposal.setContentAreaFilled(false);
         lRegisterProposal.setBorderPainted(true);
         lRegisterProposal.setOpaque(true);
-        lRegisterProposal.setBackground(new Color(0, 0, 0, 0) );
+        lRegisterProposal.setBackground(new Color(0, 0, 0, 0));
 
         lRegisterProposal.setActionCommand("buttonRegisterProposal");
         lRegisterProposal.addActionListener(this);
         panelRegisterProposal.add(lRegisterProposal);
 
-        panelRegisterProposal.setBackground( new Color(0, 0, 0, 30) );
+        panelRegisterProposal.setBackground(new Color(0, 0, 0, 30));
 //		  panelRegisterProposal.setBorder(BorderFactory.createMatteBorder(5, 10, 5, 5, new Color(0, 0, 0, 0)));
         panelRegisterProposal.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 
@@ -150,32 +169,10 @@ public class LoginFrame extends SIPCommFrame implements ServiceListener, ActionL
         panelLoginForm.add(panelPass);
         panelLoginForm.add(panelRegisterProposal);
 
-        panelLoginForm.setBackground( new Color(0, 0, 0, 30) );
+        panelLoginForm.setBackground(new Color(0, 0, 0, 30));
         panelLoginForm.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
 
         add(panelLoginForm);
-
-//		==================================================
-
-//		>> Autosetts link panel <<
-
-        JPanel panelAutoSetts = new JPanel(new BorderLayout());
-        panelAutoSetts.setOpaque(false);
-
-        JButton labelAutoSetts = new JButton(Resources.getString("plugin.eureka.LOGIN_FRAME_AUTOSEETINGS"));
-        labelAutoSetts.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        labelAutoSetts.setFocusPainted(false);
-        labelAutoSetts.setBorder(BorderFactory.createEmptyBorder(5, 0, 0, 5));
-        labelAutoSetts.setContentAreaFilled(false);
-        labelAutoSetts.setBorderPainted(false);
-        labelAutoSetts.setOpaque(false);
-
-        labelAutoSetts.setActionCommand("buttonAutoSetts");
-        labelAutoSetts.addActionListener(this);
-
-        panelAutoSetts.add( labelAutoSetts, BorderLayout.CENTER );
-
-        add(panelAutoSetts);
 
 //		==================================================
 
@@ -214,13 +211,13 @@ public class LoginFrame extends SIPCommFrame implements ServiceListener, ActionL
 
     public void actionPerformed(ActionEvent e) {
 
-        if("buttonAutoSetts".equals(e.getActionCommand()))
+        if ("buttonAutoSetts".equals(e.getActionCommand()))
             buttonAutoSettsAction();
-        else if("buttonRegisterProposal".equals(e.getActionCommand()))
+        else if ("buttonRegisterProposal".equals(e.getActionCommand()))
             buttonRegisterProposal();
-        else if("bEnter".equals(e.getActionCommand()))
+        else if ("bEnter".equals(e.getActionCommand()))
             buttonEnterAction();
-        else if("bClose".equals(e.getActionCommand()))
+        else if ("bClose".equals(e.getActionCommand()))
             buttonExitAction();
     }
 
@@ -239,9 +236,9 @@ public class LoginFrame extends SIPCommFrame implements ServiceListener, ActionL
 
         setEnabled(false);
         LoginFrame.registerFrame = new RegisterFrame();
-        LoginFrame.registerFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE );
-        LoginFrame.registerFrame.setBounds(Toolkit.getDefaultToolkit().getScreenSize().width/2 - 325,
-                Toolkit.getDefaultToolkit().getScreenSize().height/2 - 225,
+        LoginFrame.registerFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        LoginFrame.registerFrame.setBounds(Toolkit.getDefaultToolkit().getScreenSize().width / 2 - 325,
+                Toolkit.getDefaultToolkit().getScreenSize().height / 2 - 225,
                 650, 450);
         LoginFrame.registerFrame.setVisible(true);
 
@@ -253,7 +250,7 @@ public class LoginFrame extends SIPCommFrame implements ServiceListener, ActionL
     private void buttonEnterAction() {
 //		TODO: SET WHEN MAIN FUNCIONAL WILL BE DEVELOPING
 
-        if(isLoginValid() && isPassValid())
+        if (isLoginValid() && isPassValid())
             JOptionPane.showMessageDialog(this, Resources.getString("plugin.eureka.TEMP_MESS2"));
 //			setVisible(false);
 //			dispose();
@@ -273,32 +270,32 @@ public class LoginFrame extends SIPCommFrame implements ServiceListener, ActionL
 
     /**
      * Checks phone field is not empty and has only digits
+     *
      * @return total result of verification
      */
-    private boolean isLoginValid(){
+    private boolean isLoginValid() {
 
-        if(tfLogin.getText().length()==0){
+        if (tfLogin.getText().length() == 0) {
             tfLogin.setBackground(new Color(255, 180, 180));
             showMessageDialog(Resources.getString("plugin.eureka.LOGIN_NO_PHONE_LABEL"));
             return false;
-        }
-        else if(!hasOnlyDigits(tfLogin.getText())){
+        } else if (!hasOnlyDigits(tfLogin.getText())) {
             tfLogin.setBackground(new Color(255, 180, 180));
             showMessageDialog(Resources.getString("plugin.eureka.LOGIN_INCORRECT_PHONE_LABEL"));
             return false;
-        }
-        else
+        } else
             tfLogin.setBackground(Color.WHITE);
         return true;
     }
 
     /**
      * Checks password field is not empty
+     *
      * @return total result of verification
      */
-    private boolean isPassValid(){
+    private boolean isPassValid() {
 
-        if(tfPass.getText().length()==0){
+        if (tfPass.getText().length() == 0) {
             tfPass.setBackground(new Color(255, 180, 180));
             showMessageDialog(Resources.getString("plugin.eureka.LOGIN_NO_PASS_LABEL"));
             return false;
@@ -317,7 +314,7 @@ public class LoginFrame extends SIPCommFrame implements ServiceListener, ActionL
         JOptionPane.showMessageDialog(this, mess);
     }
 
-    private boolean hasOnlyDigits(String number){
+    private boolean hasOnlyDigits(String number) {
 
 
         if (Pattern.matches("[0-9]+", number)) {
@@ -335,18 +332,17 @@ public class LoginFrame extends SIPCommFrame implements ServiceListener, ActionL
         return false;
     }
 
-    private String receiveCode()
-    {
+    private String receiveCode() {
         char codeChars[] = new char[9];
 
-        for(int i = 0; i<codeChars.length; i++){
+        for (int i = 0; i < codeChars.length; i++) {
 
             int randValue = 0;
 
-            do{
-                randValue = (int) ((((int) 'Z') - ((int) '0'))*Math.random() + ((int) '0'));
+            do {
+                randValue = (int) ((((int) 'Z') - ((int) '0')) * Math.random() + ((int) '0'));
             }
-            while(i!=5 && randValue > ((int) '9') && randValue <((int) 'A'));
+            while (i != 5 && randValue > ((int) '9') && randValue < ((int) 'A'));
 
             codeChars[i] = (char) randValue;
 
@@ -360,30 +356,30 @@ public class LoginFrame extends SIPCommFrame implements ServiceListener, ActionL
     public void keyTyped(KeyEvent e) {
         JComponent comp = (JComponent) e.getSource();
 
-        if(  !( "bEnter".equals(comp.getName())  ||   "bClose".equals(comp.getName())  )  ){
+        if (!("bEnter".equals(comp.getName()) || "bClose".equals(comp.getName()))) {
             JTextField tfAction = (JTextField) e.getSource();
 
-            if(tfAction.getText().length()==0)
+            if (tfAction.getText().length() == 0)
                 tfAction.setBackground(Color.WHITE);
         }
     }
 
     public void keyPressed(KeyEvent e) {
-        if(e.getKeyCode()==KeyEvent.VK_ENTER){
+        if (e.getKeyCode() == KeyEvent.VK_ENTER) {
 
             JComponent comp = (JComponent) e.getSource();
             String componentName = comp.getName();
 
 
-            if("tfPhoneNumber".equals(componentName))
+            if ("tfPhoneNumber".equals(componentName))
                 tfPass.requestFocus();
-            else if("tfConfirmCode".equals(componentName))
+            else if ("tfConfirmCode".equals(componentName))
                 bEnter.requestFocus();
 
 
-            else if("bEnter".equals(componentName))
+            else if ("bEnter".equals(componentName))
                 buttonEnterAction();
-            else if("bClose".equals(componentName))
+            else if ("bClose".equals(componentName))
                 buttonExitAction();
 
         }

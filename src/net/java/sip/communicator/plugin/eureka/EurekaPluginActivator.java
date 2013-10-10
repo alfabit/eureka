@@ -1,26 +1,21 @@
 package net.java.sip.communicator.plugin.eureka;
 
 import net.java.sip.communicator.plugin.eureka.gui.BalanceLabel;
-import net.java.sip.communicator.plugin.simpleaccreg.InitialAccountRegistrationFrame;
 import net.java.sip.communicator.service.contactlist.MetaContactListService;
-import net.java.sip.communicator.service.gui.*;
 import net.java.sip.communicator.service.gui.Container;
-import net.java.sip.communicator.service.protocol.AccountID;
-import net.java.sip.communicator.service.protocol.AccountManager;
-import net.java.sip.communicator.service.protocol.ProtocolProviderFactory;
+import net.java.sip.communicator.service.gui.PluginComponent;
+import net.java.sip.communicator.service.gui.UIService;
 import net.java.sip.communicator.util.Logger;
 import net.java.sip.communicator.util.ServiceUtils;
 import org.jitsi.service.configuration.ConfigurationService;
 import org.jitsi.service.resources.ResourceManagementService;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
-import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceReference;
 
 import javax.swing.*;
 import java.awt.*;
 import java.util.Hashtable;
-import java.util.Iterator;
 
 /**
  * Created with IntelliJ IDEA.
@@ -30,35 +25,33 @@ import java.util.Iterator;
  * To change this template use File | Settings | File Templates.
  */
 
-public class EurekaPluginActivator implements BundleActivator{
+public class EurekaPluginActivator implements BundleActivator {
 
     /**
      * OSGi bundle context.
      */
     public static BundleContext bundleContext;
+    private UIService uiService;
 
     private static ResourceManagementService resourcesService;
 
     Logger logger = Logger.getLogger(EurekaPluginActivator.class);
 
     public void start(BundleContext bc)
-            throws Exception
-    {
+            throws Exception {
         bundleContext = bc;
+        uiService = ServiceUtils.getService(bc, UIService.class);
 
-        if(!SwingUtilities.isEventDispatchThread())
-        {
-            SwingUtilities.invokeLater(new Runnable()
-            {
-                public void run()
-                {
+        if (!SwingUtilities.isEventDispatchThread()) {
+            SwingUtilities.invokeLater(new Runnable() {
+                public void run() {
                     init();
                 }
             });
             return;
         }
 
-        init();
+//        init();
 
         //register balance label
         Hashtable<String, String> containerFilter
@@ -71,7 +64,7 @@ public class EurekaPluginActivator implements BundleActivator{
                 Container.CONTAINER_ID,
                 Container.CONTAINER_MAIN_WINDOW.getID());
 
-        bc.registerService(  PluginComponent.class.getName(),
+        bc.registerService(PluginComponent.class.getName(),
                 new BalanceLabel(),
                 containerFilter);
 
@@ -83,10 +76,11 @@ public class EurekaPluginActivator implements BundleActivator{
     /**
      * Initialize and displays the initial registration frame.
      */
-    private void init(){
+    private void init() {
 
+        UIService uiService = ServiceUtils.getService(bundleContext, UIService.class);
 //        EurekaFrame accountRegFrame = new EurekaFrame();
-        LoginFrame accountRegFrame = new LoginFrame();
+        LoginFrame accountRegFrame = new LoginFrame(uiService);
 
 //            accountRegFrame.pack();
             /*
@@ -97,19 +91,18 @@ public class EurekaPluginActivator implements BundleActivator{
             int w = (int) accountRegFrame.getWidth();
             int h = (int) accountRegFrame.getWidth();
             */
-            accountRegFrame.setSize(365, 300);
-            accountRegFrame.setLocation(Toolkit.getDefaultToolkit().getScreenSize().width/2 - 250,
-                Toolkit.getDefaultToolkit().getScreenSize().height/2 - 200);
+        accountRegFrame.setSize(365, 300);
+        accountRegFrame.setLocation(Toolkit.getDefaultToolkit().getScreenSize().width / 2 - 250,
+                Toolkit.getDefaultToolkit().getScreenSize().height / 2 - 200);
 //            accountRegFrame.setResizable(true);
 //            accountRegFrame.setLocation(screenSize.width / 2
 //                    - accountRegFrame.getWidth() / 2, screenSize.height / 2
 //                    - accountRegFrame.getHeight() / 2);
 
-            accountRegFrame.setVisible(true);
+        accountRegFrame.setVisible(true);
     }
 
-    public void stop(BundleContext bc) throws Exception
-    {
+    public void stop(BundleContext bc) throws Exception {
     }
 
 
@@ -126,8 +119,7 @@ public class EurekaPluginActivator implements BundleActivator{
      * @return the <tt>MetaContactListService</tt> obtained from the bundle
      *         context
      */
-    public static MetaContactListService getContactList()
-    {
+    public static MetaContactListService getContactList() {
         ServiceReference serviceReference =
                 bundleContext.getServiceReference(MetaContactListService.class
                         .getName());
@@ -149,8 +141,7 @@ public class EurekaPluginActivator implements BundleActivator{
      * @return the <tt>MetaContactListService</tt> obtained from the bundle
      *         context
      */
-    public static UIService getUIService()
-    {
+    public static UIService getUIService() {
         ServiceReference serviceReference
                 = bundleContext.getServiceReference(UIService.class.getName());
 
@@ -163,12 +154,10 @@ public class EurekaPluginActivator implements BundleActivator{
      * access all resources.
      *
      * @return the <tt>ResourceManagementService</tt>, through which we will
-     * access all resources.
+     *         access all resources.
      */
-    public static ResourceManagementService getResources()
-    {
-        if (resourcesService == null)
-        {
+    public static ResourceManagementService getResources() {
+        if (resourcesService == null) {
             resourcesService
                     = ServiceUtils.getService(
                     bundleContext,
@@ -184,8 +173,7 @@ public class EurekaPluginActivator implements BundleActivator{
      *
      * @return a currently valid implementation of the ConfigurationService.
      */
-    public static ConfigurationService getConfigService()
-    {
+    public static ConfigurationService getConfigService() {
         return ServiceUtils.getService(bundleContext,
                 ConfigurationService.class);
     }
